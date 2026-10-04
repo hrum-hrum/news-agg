@@ -68,4 +68,4 @@ ehthumbs.db
 Desktop.ini
 
 # Старая папка фронтенда
-/front-old/
+**/front-old/
