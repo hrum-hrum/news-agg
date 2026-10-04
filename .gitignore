@@ -1,0 +1,71 @@
+# ==========================================
+# VS Code (Среда разработки)
+# ==========================================
+.vscode/
+*.code-workspace
+.history/
+.ionide/
+
+# ==========================================
+# BACKEND (Python / Django / Flask / Fastapi)
+# ==========================================
+# Кэш Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Виртуальные окружения (в корне или внутри backend/)
+**/venv/
+**/env/
+**/.venv/
+**/ENV/
+env.bak/
+venv.bak/
+
+# Конфигурация и секреты (Файлы окружения)
+*.env
+.env.*
+!.env.example
+
+# Логи
+*.log
+
+# ==========================================
+# FRONTEND (Vue.js / Node.js)
+# ==========================================
+# Зависимости
+**/node_modules/
+**/jspm_packages/
+
+# Сборка и логи
+**/dist/
+**/tmp/
+**/out/
+**/.nuxt/
+**/.output/
+**/.vuepress/.temp/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Локальные файлы конфигурации Vue / Vite
+.eslintcache
+.stylelintcache
+*.local
+
+# ==========================================
+# Системные файлы (OS)
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Старая папка фронтенда
+/front-old/

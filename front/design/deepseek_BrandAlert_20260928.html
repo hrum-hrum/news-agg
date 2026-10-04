@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Бренд-радар — рабочее место оператора</title>
+<style>
+:root{
+  --bg:#0a0d13; --panel:#111621; --panel2:#151b27; --panel3:#1a2130;
+  --bd:#222b3b; --bd2:#2c3purple; --bd2:#2c374a;
+  --tx:#e6edf3; --mut:#7d8899; --mut2:#5c6675;
+  --crit:#ff4d4f; --neg:#ff9f43; --neu:#6b7688; --pos:#2ecc71; --acc:#4c8dff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--tx); overflow:hidden;
+  font:13px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Inter',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#2a3345;border-radius:9px}
+::-webkit-scrollbar-thumb:hover{background:#38455c}
+::-webkit-scrollbar-track{background:transparent}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ============ КАРКАС ============ */
+.app{display:grid;grid-template-columns:70px 1fr;height:100vh}
+
+/* --- рейл навигации --- */
+.rail{background:var(--panel);border-right:1px solid var(--bd);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px}
+.logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#4c8dff,#a855f7);display:grid;place-items:center;font-weight:800;font-size:15px;margin-bottom:10px;box-shadow:0 6px 18px rgba(76,141,255,.28)}
+.nav-btn{width:52px;height:46px;border-radius:11px;border:1px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--mut);position:relative;transition:.14s}
+.nav-btn .ic{font-size:17px;line-height:1}
+.nav-btn .tx{font-size:8px;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.nav-btn:hover{background:var(--panel3);color:var(--tx)}
+.nav-btn.active{background:#1b2740;border-color:#2c4a80;color:#cfe0ff}
+.nav-btn .dot{position:absolute;top:5px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--crit);color:#fff;font-size:9px;font-weight:700;display:grid;place-items:center}
+.rail-sep{flex:1}
+
+/* --- основная колонка --- */
+.main{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.topbar{height:54px;flex:0 0 54px;border-bottom:1px solid var(--bd);background:var(--panel);display:flex;align-items:center;gap:12px;padding:0 14px}
+.brand-select{display:flex;align-items:center;gap:8px;background:var(--panel3);border:1px solid var(--bd);border-radius:9px;padding:6px 10px;cursor:pointer}
+.brand-select b{font-size:13px}
+.brand-select .caret{color:var(--mut);font-size:10px}
+.search{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;background:var(--panel3);border:1px solid var(--bd);border-radius:9px;padding:7px 11px;color:var(--mut)}
+.search input{background:none;border:none;outline:none;flex:1;color:var(--tx)}
+.search kbd{background:#0d121b;border:1px solid var(--bd2);border-radius:5px;padding:1px 5px;font-size:10px;color:var(--mut)}
+.topbar .spacer{flex:1}
+.pill{display:flex;align-items:center;gap:7px;background:var(--panel3);border:1px solid var(--bd);border-radius:9px;padding:6px 10px;font-size:12px}
+.status-dot{width:8px;height:8px;border-radius:50%}
+.status-dot.ok{background:var(--pos);box-shadow:0 0 8px rgba(46,204,113,.7)}
+.status-dot.warn{background:var(--neg);box-shadow:0 0 8px rgba(255,159,67,.7)}
+.status-dot.err{background:var(--crit);box-shadow:0 0 8px rgba(255,77,79,.7)}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:grid;place-items:center;font-weight:700;font-size:12px}
+
+/* --- экраны --- */
+.screen{display:none;flex:1;min-height:0}
+.screen.active{display:block}
+.screen.scroll{overflow:auto}
+
+/* ============ 1. ЛЕНТА ============ */
+.feed-wrap{display:grid;grid-template-columns:292px 1fr;height:100%}
+
+/* левая панель фильтров */
+.filters{border-right:1px solid var(--bd);background:var(--panel);overflow-y:auto;padding:12px 0 40px}
+.filters-head{padding:0 14px 10px;display:flex;align-items:center;justify-content:space-between}
+.filters-head b{font-size:13px;letter-spacing:.02em}
+.reset{font-size:11px;color:var(--acc)}
+.acc{border-top:1px solid var(--bd)}
+.acc-head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:11px 14px;font-size:12px;font-weight:600;color:#c3ccd9;letter-spacing:.02em}
+.acc-head:hover{background:var(--panel2)}
+.acc-head .chev{color:var(--mut);font-size:10px;transition:.18s}
+.acc.open .acc-head .chev{transform:rotate(90deg)}
+.acc-body{display:none;padding:0 14px 14px}
+.acc.open .acc-body{display:block}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;border:1px solid var(--bd2);background:var(--panel3);font-size:11.5px;color:var(--mut);transition:.14s}
+.chip:hover{border-color:#3d4f6b;color:var(--tx)}
+.chip.active{background:#1b2740;border-color:#33538f;color:#d5e3ff}
+.chip.active.c-crit{background:#3a1417;border-color:#7a2427;color:#ffb3b4}
+.chip.active.c-neg{background:#3a2410;border-color:#7a4d1a;color:#ffd0a0}
+.chip.active.c-pos{background:#0f3320;border-color:#1f6b3e;color:#a6f0c4}
+.chip .cnt{background:#0c1119;border-radius:8px;padding:0 5px;font-size:10px;color:var(--mut)}
+
+.field{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px;color:#b9c2d0;cursor:pointer}
+.field input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:pointer}
+.field .src-ic{width:18px;text-align:center;font-size:12px;color:var(--mut)}
+.field .cnt{margin-left:auto;color:var(--mut2);font-size:11px}
+
+.slider-block{margin-top:6px}
+.slider-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mut);margin-bottom:7px}
+.slider-label b{color:var(--acc);font-size:12.5px}
+input[type=range]{width:100%;-webkit-appearance:none;height:4px;border-radius:4px;background:#242e40;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--acc);border:3px solid #0f1520;box-shadow:0 0 0 1px var(--acc);cursor:pointer}
+.risk-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.risk-tag{font-size:11px;padding:3px 8px;border-radius:6px;background:#2a1518;border:1px solid #55262a;color:#ff9ea0}
+
+/* центральная зона */
+.stream{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.stream-bar{flex:0 0 46px;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--bd);background:var(--panel2)}
+.seg{display:flex;background:#0d121b;border:1px solid var(--bd);border-radius:9px;padding:2px}
+.seg button{padding:5px 12px;border-radius:7px;font-size:12px;color:var(--mut)}
+.seg button.on{background:#1e2a40;color:#d5e3ff;box-shadow:inset 0 0 0 1px #33456a}
+.stream-bar .spacer{flex:1}
+.sortbtn{font-size:12px;color:var(--mut);padding:6px 10px;border-radius:8px;border:1px solid var(--bd)}
+.sortbtn:hover{color:var(--tx);border-color:#3d4f6b}
+.count-info{font-size:11.5px;color:var(--mut2)}
+
+.stream-list{flex:1;overflow-y:auto;padding:12px 14px 60px;display:flex;flex-direction:column;gap:10px}
+
+/* карточка */
+.card{background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--neu);border-radius:11px;padding:12px 14px;cursor:pointer;transition:.14s;position:relative}
+.card:hover{border-color:#33455f;border-left-color:inherit;background:var(--panel2);transform:translateY(-1px)}
+.card.t-crit{border-left-color:var(--crit);box-shadow:inset 0 0 0 1px rgba(255,77,79,.12)}
+.card.t-crit:hover{box-shadow:inset 0 0 0 1px rgba(255,77,79,.35),0 6px 22px rgba(255,77,79,.08)}
+.card.t-neg{border-left-color:var(--neg)}
+.card.t-pos{border-left-color:var(--pos)}
+.card.t-neu{border-left-color:var(--neu)}
+
+.card-head{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--mut);margin-bottom:7px}
+.card-head .src{display:flex;align-items:center;gap:6px;color:#a9b4c4;font-weight:600}
+.card-head .src .ic{width:16px;text-align:center}
+.card-head .sep{color:#2c3purple;color:#2e3away;color:#333e52}
+.card-head .reach{margin-left:auto;display:flex;align-items:center;gap:5px;color:#8b96a8}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--crit);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,79,.75)}70%{box-shadow:0 0 0 8px rgba(255,77,79,0)}100%{box-shadow:0 0 0 0 rgba(255,77,79,0)}}
+
+.card h3{font-size:14.5px;font-weight:650;line-height:1.35;margin-bottom:5px;letter-spacing:-.005em}
+.snippet{font-size:12.5px;color:#98a3b3;line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+mark{background:none;padding:0 2px;border-radius:3px;font-weight:600}
+mark.risk{background:rgba(255,77,79,.16);color:#ff9b9c;box-shadow:inset 0 -1px 0 rgba(255,77,79,.4)}
+mark.brand{background:rgba(76,141,255,.15);color:#9dc2ff;box-shadow:inset 0 -1px 0 rgba(76,141,255,.35)}
+
+.verdict{display:flex;align-items:center;gap:9px;margin-top:10px;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:6px}
+.badge.crit{background:rgba(255,77,79,.14);color:#ff7b7d;border:1px solid rgba(255,77,79,.4)}
+.badge.neg{background:rgba(255,159,67,.13);color:#ffb96b;border:1px solid rgba(255,159,67,.35)}
+.badge.neu{background:rgba(107,118,136,.16);color:#9aa6b8;border:1px solid rgba(107,118,136,.35)}
+.badge.pos{background:rgba(46,204,113,.13);color:#63d992;border:1px solid rgba(46,204,113,.35)}
+
+.score{position:relative;font-size:11.5px;font-weight:700;color:#cbd5e3;background:#0f1520;border:1px solid var(--bd2);border-radius:6px;padding:3px 8px;cursor:help}
+.score .q{color:var(--mut2);font-weight:400}
+.score::after{
+  content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);width:295px;
+  background:#182031;border:1px solid #34425c;border-radius:9px;padding:10px 12px;
+  font-size:11.5px;font-weight:400;line-height:1.5;color:#c2cee0;text-align:left;
+  box-shadow:0 16px 40px rgba(0,0,0,.65);opacity:0;pointer-events:none;transition:.15s;z-index:50;
+}
+.score:hover::after{opacity:1}
+.score::before{content:"i";position:absolute;top:-9px;left:14px;font-size:10px;color:var(--acc)}
+
+.dupes{font-size:11.5px;color:#7f8b9d;background:#0f1520;border:1px dashed #2b3648;border-radius:6px;padding:3px 9px;transition:.14s}
+.dupes:hover{color:#b9c6d9;border-color:#3d4f6b;border-style:solid}
+
+.actions{display:flex;gap:7px;margin-top:11px;padding-top:11px;border-top:1px solid #1b2231}
+.act{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid var(--bd2);background:var(--panel3);color:#aab6c7;transition:.14s}
+.act:hover{color:#fff;border-color:#44577a;background:#202a3c}
+.act.primary{background:#1c3companion;background:#1c3358;border-color:#2f5288;color:#cfe0ff}
+.act.primary:hover{background:#254475;border-color:#3d6cb0}
+.act.danger:hover{color:#ff9b9c;border-color:#7a2427;background:#2a1518}
+.act .k{font-size:9.5px;color:var(--mut2);margin-left:5px;border:1px solid var(--bd2);border-radius:4px;padding:0 4px}
+
+/* правая панель (drawer) */
+.drawer{
+  position:absolute;top:0;right:0;bottom:0;width:480px;max-width:52vw;
+  background:var(--panel);border-left:1px solid var(--bd2);
+  box-shadow:-24px 0 60px rgba(0,0,0,.55);
+  transform:translateX(102%);transition:transform .22s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;z-index:60;
+}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;gap:10px}
+.drawer-head h2{font-size:15px;line-height:1.4;flex:1}
+.close-x{font-size:18px;color:var(--mut);padding:2px 6px;border-radius:6px}
+.close-x:hover{background:var(--panel3);color:var(--tx)}
+.drawer-body{flex:1;overflow-y:auto;padding:14px 16px 24px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
+.meta{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:9px 11px}
+.meta .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut2);margin-bottom:3px}
+.meta .val{font-size:12.5px;color:#d3dbe7;font-weight:600}
+.full-text{font-size:13px;line-height:1.65;color:#c2cbd9;background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:13px 14px;margin-bottom:16px}
+.sec-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut2);font-weight:700;margin:0 0 9px}
+.log-line{display:flex;gap:10px;font-size:11.5px;color:#93a0b2;padding:6px 0;border-bottom:1px dashed #1e2635}
+.log-line .t{color:var(--mut2);font-variant-numeric:tabular-nums;flex:0 0 62px}
+.drawer-foot{padding:12px 16px;border-top:1px solid var(--bd);display:flex;gap:8px;background:var(--panel2)}
+
+/* ============ 2. АЛЕРТЫ ============ */
+.page{padding:18px 20px 60px;max-width:1500px}
+.page-title{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.page-title h1{font-size:19px;letter-spacing:-.01em}
+.page-title .sub{font-size:12px;color:var(--mut)}
+.block-title{font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9aa6b8;margin:26px 0 12px;display:flex;align-items:center;gap:9px}
+.block-title::after{content:"";flex:1;height:1px;background:var(--bd)}
+.fire-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.fire{background:linear-gradient(160deg,#1d1218,#141922);border:1px solid #5a2327;border-left:3px solid var(--crit);border-radius:12px;padding:14px;position:relative;overflow:hidden}
+.fire::before{content:"";position:absolute;inset:0;background:radial-gradient(400px 120px at 0% 0%,rgba(255,77,79,.12),transparent 70%);pointer-events:none}
+.fire-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.fire-head .id{font-size:11px;font-weight:800;color:#ff9b9c;letter-spacing:.05em}
+.fire-head .live{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10.5px;color:#ff9b9c;font-weight:700;letter-spacing:.05em}
+.fire h3{font-size:14.5px;margin-bottom:11px;line-height:1.35}
+.fire-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.fstat{background:#0f1520cc;border:1px solid #262f40;border-radius:8px;padding:8px 9px}
+.fstat .lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut2);margin-bottom:3px}
+.fstat .val{font-size:15px;font-weight:750;color:#e6edf3;font-variant-numeric:tabular-nums}
+.fstat .val.up{color:#ff7b7d}
+.fire-actions{display:flex;gap:8px;position:relative;z-index:2}
+.mute-btn{flex:1;font-size:11.5px;font-weight:700;padding:8px;border-radius:9px;background:#2a1518;border:1px solid #6b2a2d;color:#ffb3b4}
+.mute-btn:hover{background:#3a1b1f;border-color:#8d3639}
+.mute-btn.muted{background:#181e29;border-color:#2c374a;color:var(--mut)}
+
+/* правила */
+.rules{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.rule .rl{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:#b9c2d0;margin-bottom:9px}
+.rule .rl b{color:var(--acc);font-size:13px;font-variant-numeric:tabular-nums}
+.rule .hint{font-size:11px;color:var(--mut2);margin-top:9px;line-height:1.5}
+.rule-sentence{font-size:13px;color:#cbd5e3;background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;line-height:1.7;margin-bottom:14px}
+.rule-sentence input[type=number]{width:56px;background:#0d121b;border:1px solid var(--bd2);border-radius:6px;padding:2px 6px;text-align:center;color:var(--acc);font-weight:700;font-variant-numeric:tabular-nums}
+.channel-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.channel{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:9px;border:1px solid var(--bd2);background:var(--panel3);font-size:12px;color:var(--mut);cursor:pointer}
+.channel.on{border-color:#2f5288;background:#1c3358;color:#cfe0ff}
+.channel input{accent-color:var(--acc);cursor:pointer}
+
+/* ============ 3. АНАЛИТИКА ============ */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--panel);border:1px solid var(--bd);border-radius:11px;padding:13px 15px}
+.kpi .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut2);margin-bottom:6px}
+.kpi .val{font-size:23px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .delta{font-size:11.5px;margin-top:4px;color:var(--mut)}
+.kpi .delta.bad{color:#ff7b7d}
+.kpi .delta.good{color:#63d992}
+.kpi.crit .val{color:#ff7b7d}
+
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+.panel-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.panel-head h2{font-size:14px;font-weight:650}
+.panel-head .sub{font-size:11.5px;color:var(--mut2)}
+.panel-head .spacer{flex:1}
+
+/* таймлайн */
+.timeline{position:relative;height:180px}
+.tl-bars{display:flex;align-items:flex-end;gap:3px;height:150px;padding-top:14px}
+.tl-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:1.5px;cursor:pointer;border-radius:4px 4px 0 0;transition:.14s;position:relative;height:100%}
+.tl-col:hover{background:#ffffff08}
+.tl-seg{width:100%;border-radius:2px;min-height:2px}
+.tl-seg.pos{background:#2ecc71}
+.tl-seg.neu{background:#4a5568}
+.tl-seg.neg{background:#ff9f43}
+.tl-seg.crit{background:#ff4d4f}
+.tl-bolt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:13px;filter:drop-shadow(0 0 6px rgba(255,77,79,.9))}
+.tl-axis{display:flex;gap:3px;margin-top:8px;border-top:1px solid var(--bd);padding-top:7px}
+.tl-axis span{flex:1;text-align:center;font-size:10px;color:var(--mut2);font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:16px;font-size:11.5px;color:var(--mut)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
+
+.grid-2{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+
+/* пузыри */
+.bubbles{position:relative;height:260px;background:radial-gradient(circle at 50% 50%,#131a27,transparent 75%);border-radius:10px;border:1px solid #1b2231}
+.bub{position:absolute;border-radius:50%;display:grid;place-items:center;text-align:center;font-size:11px;font-weight:650;line-height:1.2;padding:6px;color:#e9eff8;border:1px solid rgba(255,255,255,.14);cursor:pointer;transition:.18s;backdrop-filter:blur(2px)}
+.bub:hover{transform:scale(1.07);z-index:5;border-color:rgba(255,255,255,.4)}
+
+/* share of voice */
+.sov-row{margin-bottom:14px}
+.sov-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;color:#c3ccd9}
+.sov-top .num{color:var(--mut)}
+.sov-bar{height:11px;border-radius:6px;overflow:hidden;display:flex;background:#0d121b}
+.sov-bar div{height:100%}
+
+/* ============ 4. НАСТРОЙКИ ============ */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--bd);margin-bottom:18px}
+.tab{padding:10px 16px;font-size:12.5px;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--tx)}
+.tab.on{color:#cfe0ff;border-bottom-color:var(--acc)}
+.form-row{margin-bottom:20px}
+.form-row label{display:block;font-size:12px;color:#b9c2d0;margin-bottom:7px;font-weight:600}
+.form-row .desc{font-size:11.5px;color:var(--mut2);margin-bottom:9px;line-height:1.5}
+.input{width:100%;background:#0d121b;border:1px solid var(--bd2);border-radius:9px;padding:10px 12px;outline:none;transition:.14s;font-size:13px}
+.input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(76,141,255,.12)}
+.tag-input{display:flex;flex-wrap:wrap;gap:6px;background:#0d121b;border:1px solid var(--bd2);border-radius:9px;padding:8px}
+.tag{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border-radius:7px;font-size:12px}
+.tag.kw{background:#14243d;border:1px solid #2c4a80;color:#a8c8ff}
+.tag.minus{background:#1c1f28;border:1px solid #333c4d;color:#98a3b3}
+.tag.risk{background:#2a1518;border:1px solid #55262a;color:#ff9ea0}
+.tag .x{color:inherit;opacity:.55;font-size:13px;line-height:1}
+.tag .x:hover{opacity:1}
+.tag-input input{background:none;border:none;outline:none;flex:1;min-width:150px;font-size:12.5px;color:var(--tx);padding:4px}
+.src-table{width:100%;border-collapse:collapse}
+.src-table th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut2);padding:0 12px 10px;font-weight:700;border-bottom:1px solid var(--bd)}
+.src-table td{padding:11px 12px;border-bottom:1px solid #1b2231;font-size:12.5px;color:#c3ccd9}
+.src-table tr:hover td{background:#141a26}
+.toggle{width:40px;height:22px;border-radius:12px;background:#2a3345;position:relative;transition:.18s;cursor:pointer;flex:0 0 auto}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#7d8899;transition:.18s}
+.toggle.on{background:#1c3358}
+.toggle.on::after{left:21px;background:var(--acc)}
+
+/* ============ 5. HEALTH & LOGS ============ */
+.conn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:11px}
+.conn{background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--pos);border-radius:10px;padding:12px 14px}
+.conn.warn{border-left-color:var(--neg)}
+.conn.err{border-left-color:var(--crit);background:linear-gradient(160deg,#1b1116,#111621)}
+.conn-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.conn-head b{font-size:12.5px}
+.conn-head .status{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:6px}
+.conn-head .status.ok{background:rgba(46,204,113,.13);color:#63d992;border:1px solid rgba(46,204,113,.3)}
+.conn-head .status.warn{background:rgba(255,159,67,.13);color:#ffb96b;border:1px solid rgba(255,159,67,.3)}
+.conn-head .status.err{background:rgba(255,77,79,.14);color:#ff7b7d;border:1px solid rgba(255,77,79,.35)}
+.conn-metrics{display:flex;gap:16px;font-size:11.5px;color:var(--mut)}
+.conn-metrics b{color:#d3dbe7;font-variant-numeric:tabular-nums}
+.conn-err{font-size:11.5px;color:#ff9b9c;margin-top:8px;line-height:1.45}
+
+.log-table{width:100%;border-collapse:collapse;font-size:12px}
+.log-table th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut2);padding:0 12px 10px;font-weight:700;border-bottom:1px solid var(--bd)}
+.log-table td{padding:9px 12px;border-bottom:1px solid #1b2231;color:#b6c0cf;vertical-align:top}
+.log-table td.t{color:var(--mut2);font-variant-numeric:tabular-nums;white-space:nowrap;width:96px}
+.log-table td.comp{color:#a8c8ff;white-space:nowrap;width:150px;font-weight:600}
+.log-table tr:hover td{background:#141a26}
+.st{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.st.ok{background:rgba(46,204,113,.12);color:#63d992}
+.st.warn{background:rgba(255,159,67,.12);color:#ffb96b}
+.st.err{background:rgba(255,77,79,.13);color:#ff7b7d}
+.st.info{background:rgba(76,141,255,.12);color:#8ab4ff}
+
+/* хоткеи */
+.hotkeys{position:fixed;bottom:14px;right:18px;display:flex;gap:9px;background:#111621ee;border:1px solid var(--bd2);border-radius:10px;padding:8px 12px;font-size:11px;color:var(--mut);backdrop-filter:blur(8px);z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.hotkeys kbd{background:#0d121b;border:1px solid var(--bd2);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:#c3ccd9;font-size:10.5px;margin-right:4px}
+.toast{position:fixed;bottom:70px;right:18px;background:#1c3358;border:1px solid #3d6cb0;color:#dbe8ff;padding:11px 16px;border-radius:10px;font-size:12.5px;z-index:90;opacity:0;transform:translateY(8px);transition:.2s;box-shadow:0 12px 34px rgba(0,0,0,.6)}
+.toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ========== РЕЙЛ ========== -->
+  <aside class="rail">
+    <div class="logo">БР</div>
+    <button class="nav-btn active" data-screen="feed"><span class="ic">📡</span><span class="tx">Лента</span></button>
+    <button class="nav-btn" data-screen="alerts"><span class="ic">🔥</span><span class="tx">Алерты</span><span class="dot">4</span></button>
+    <button class="nav-btn" data-screen="analytics"><span class="ic">📊</span><span class="tx">Аналитика</span></button>
+    <button class="nav-btn" data-screen="settings"><span class="ic">⚙️</span><span class="tx">Настройки</span></button>
+    <button class="nav-btn" data-screen="health"><span class="ic">🩺</span><span class="tx">Health</span><span class="dot" style="background:var(--crit)">!</span></button>
+    <div class="rail-sep"></div>
+    <button class="nav-btn" title="Профиль"><span class="ic">👤</span><span class="tx">Профиль</span></button>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="brand-select">
+        <span>🏷️</span><b>Бренд А</b><span class="caret">▼</span>
+      </div>
+      <div class="search">
+        <span>🔍</span>
+        <input placeholder="Поиск по упоминаниям, авторам, ключевым словам…">
+        <kbd>Ctrl</kbd><kbd>K</kbd>
+      </div>
+      <div class="spacer"></div>
+      <div class="pill"><span class="status-dot ok"></span>Сбор: 6/7 источников</div>
+      <div class="pill" style="color:#ffb96b"><span>🔥</span>Активных всплесков: <b class="num">4</b></div>
+      <div class="pill"><span>⏱</span>Задержка: <b class="num">2.1с</b></div>
+      <div class="avatar">АК</div>
+    </header>
+
+    <!-- ==================================================== -->
+    <!-- ЭКРАН 1: ЛЕНТА                                       -->
+    <!-- ==================================================== -->
+    <section class="screen active" id="screen-feed" style="position:relative;overflow:hidden">
+      <div class="feed-wrap">
+
+        <!-- ФИЛЬТРЫ -->
+        <aside class="filters">
+          <div class="filters-head"><b>Фильтры</b><button class="reset">Сбросить</button></div>
+
+          <div class="acc open">
+            <button class="acc-head">Проекты / Бренды <span class="chev">▶</span></button>
+            <div class="acc-body">
+              <div class="chip-row">
+                <button class="chip active">Бренд А <span class="cnt">142</span></button>
+                <button class="chip">Бренд Б <span class="cnt">38</span></button>
+                <button class="chip">Продукт X <span class="cnt">17</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc open">
+            <button class="acc-head">Тональность <span class="chev">▶</span></button>
+            <div class="acc-body">
+              <div class="chip-row" id="tone-filters">
+                <button class="chip active" data-tone="all">Все <span class="cnt">142</span></button>
+                <button class="chip c-crit" data-tone="crit">Критический негатив <span class="cnt">9</span></button>
+                <button class="chip c-neg" data-tone="neg">Негатив <span class="cnt">34</span></button>
+                <button class="chip" data-tone="neu">Нейтральные <span class="cnt">71</span></button>
+                <button class="chip c-pos" data-tone="pos">Позитив <span class="cnt">28</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc open">
+            <button class="acc-head">Источники <span class="chev">▶</span></button>
+            <div class="acc-body">
+              <label class="field"><input type="checkbox" checked><span class="src-ic">✈️</span>Telegram<span class="cnt">64</span></label>
+              <label class="field"><input type="checkbox" checked><span class="src-ic">📰</span>СМИ / RSS<span class="cnt">31</span></label>
+              <label class="field"><input type="checkbox" checked><span class="src-ic">🅥</span>VK<span class="cnt">22</span></label>
+              <label class="field"><input type="checkbox" checked><span class="src-ic">⭐</span>Отзовики<span class="cnt">18</span></label>
+              <label class="field"><input type="checkbox"><span class="src-ic">💬</span>Форумы<span class="cnt">7</span></label>
+            </div>
+          </div>
+
+          <div class="acc open">
+            <button class="acc-head">ML-фильтры <span class="chev">▶</span></button>
+            <div class="acc-body">
+              <div class="slider-block">
+                <div class="slider-label"><span>Порог уверенности модели (Score)</span><b id="score-val">≥ 60%</b></div>
+                <input type="range" min="0" max="100" value="60" id="score-range">
+              </div>
+              <div class="slider-block" style="margin-top:16px">
+                <div class="slider-label"><span>Приоритет при Risk-словах</span><b>Высокий</b></div>
+                <input type="range" min="0" max="100" value="80">
+              </div>
+              <div class="risk-tags">
+                <span class="risk-tag">мошенники</span>
+                <span class="risk-tag">суд</span>
+                <span class="risk-tag">упал</span>
+                <span class="risk-tag">слив</span>
+                <span class="risk-tag">взрыв</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc open">
+            <button class="acc-head">Статус обработки <span class="chev">▶</span></button>
+            <div class="acc-body">
+              <div class="chip-row">
+                <button class="chip active">Новые <span class="cnt">86</span></button>
+                <button class="chip">В работе <span class="cnt">12</span></button>
+                <button class="chip">Закрытые <span class="cnt">39</span></button>
+                <button class="chip">Ложное срабатывание <span class="cnt">5</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc">
+            <button class="acc-head">Охват и авторы <span class="chev">▶</span></button>
+            <div class="acc-body">
+              <div class="slider-block">
+                <div class="slider-label"><span>Мин. охват, просмотров</span><b>1 000</b></div>
+                <input type="range" min="0" max="500000" value="1000">
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ПОТОК -->
+        <div class="stream">
+          <div class="stream-bar">
+            <div class="seg" id="view-mode">
+              <button class="on" data-mode="clusters">Сюжеты / Кластеры</button>
+              <button data-mode="all">Поток всех постов</button>
+            </div>
+            <span class="count-info" id="count-info">Показано 8 из 142 · обновлено 12 сек назад</span>
+            <div class="spacer"></div>
+            <button class="sortbtn">⇅ Сначала критические</button>
+            <button class="sortbtn">⟳ Автообновление: вкл</button>
+          </div>
+          <div class="stream-list" id="stream-list"></div>
+        </div>
+      </div>
+
+      <!-- DRAWER -->
+      <aside class="drawer" id="drawer">
+        <div class="drawer-head">
+          <h2 id="dr-title">Заголовок публикации</h2>
+          <button class="close-x" id="dr-close">✕</button>
+        </div>
+        <div class="drawer-body">
+          <div class="meta-grid">
+            <div class="meta"><div class="lbl">Источник</div><div class="val" id="dr-src">—</div></div>
+            <div class="meta"><div class="lbl">Время</div><div class="val" id="dr-time">—</div></div>
+            <div class="meta"><div class="lbl">Охват</div><div class="val" id="dr-reach">—</div></div>
+            <div class="meta"><div class="lbl">ML Score</div><div class="val" id="dr-score">—</div></div>
+          </div>
+          <div class="sec-title">Полный текст публикации</div>
+          <div class="full-text" id="dr-text">—</div>
+
+          <div class="sec-title">Почему модель так решила</div>
+          <div class="full-text" style="font-size:12.5px;color:#a8c8ff" id="dr-explain">—</div>
+
+          <div class="sec-title">Лог автоматических действий</div>
+          <div id="dr-log"></div>
+        </div>
+        <div class="drawer-foot">
+          <button class="act primary" style="flex:1">Взять в работу <span class="k">Space</span></button>
+          <button class="act">Сменить тональность</button>
+          <button class="act">Перейти к источнику ↗</button>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ЭКРАН 2: АЛЕРТЫ                                      -->
+    <!-- ==================================================== -->
+    <section class="screen scroll" id="screen-alerts">
+      <div class="page">
+        <div class="page-title">
+          <h1>🔥 Управление всплесками</h1>
+          <span class="sub">Монитор аномальной активности · обновление каждые 30 секунд</span>
+        </div>
+
+        <div class="fire-grid">
+          <div class="fire">
+            <div class="fire-head"><span class="id">ВСПЛЕСК #4</span><span class="live"><span class="pulse"></span>АКТИВЕН</span></div>
+            <h3>Telegram · «Сбой приложения при оплате»</h3>
+            <div class="fire-stats">
+              <div class="fstat"><div class="lbl">Длительность</div><div class="val">40 мин</div></div>
+              <div class="fstat"><div class="lbl">Рост</div><div class="val up">+400%</div></div>
+              <div class="fstat"><div class="lbl">Публикаций</div><div class="val">63</div></div>
+            </div>
+            <div class="fire-actions">
+              <button class="mute-btn">🔇 Mute / кулдаун 2 ч</button>
+              <button class="act">Разобрать</button>
+            </div>
+          </div>
+
+          <div class="fire">
+            <div class="fire-head"><span class="id">ВСПЛЕСК #3</span><span class="live"><span class="pulse"></span>АКТИВЕН</span></div>
+            <h3>VK + Отзовики · «Списание денег за отменённую подписку»</h3>
+            <div class="fire-stats">
+              <div class="fstat"><div class="lbl">Длительность</div><div class="val">1 ч 12 м</div></div>
+              <div class="fstat"><div class="lbl">Рост</div><div class="val up">+260%</div></div>
+              <div class="fstat"><div class="lbl">Публикаций</div><div class="val">41</div></div>
+            </div>
+            <div class="fire-actions">
+              <button class="mute-btn">🔇 Mute / кулдаун 2 ч</button>
+              <button class="act">Разобрать</button>
+            </div>
+          </div>
+
+          <div class="fire" style="border-left-color:var(--neg);border-color:#5a3d1c">
+            <div class="fire-head"><span class="id" style="color:#ffb96b">ВСПЛЕСК #2</span><span class="live" style="color:#ffb96b"><span class="pulse" style="background:var(--neg)"></span>ЗАТУХАЕТ</span></div>
+            <h3>СМИ · «Суд с клиентом: апелляция проиграна»</h3>
+            <div class="fire-stats">
+              <div class="fstat"><div class="lbl">Длительность</div><div class="val">2 ч 05 м</div></div>
+              <div class="fstat"><div class="lbl">Рост</div><div class="val up" style="color:#ffb96b">+90%</div></div>
+              <div class="fstat"><div class="lbl">Публикаций</div><div class="val">18</div></div>
+            </div>
+            <div class="fire-actions">
+              <button class="mute-btn muted">🔇 Замьючен (1:12)</button>
+              <button class="act">Разобрать</button>
+            </div>
+          </div>
+
+          <div class="fire" style="border-left-color:var(--neg);border-color:#5a3d1c">
+            <div class="fire-head"><span class="id" style="color:#ffb96b">ВСПЛЕСК #1</span><span class="live" style="color:#ffb96b"><span class="pulse" style="background:var(--neg)"></span>ЗАТУХАЕТ</span></div>
+            <h3>Telegram · «Слив базы клиентов?»</h3>
+            <div class="fire-stats">
+              <div class="fstat"><div class="lbl">Длительность</div><div class="val">3 ч 40 м</div></div>
+              <div class="fstat"><div class="lbl">Рост</div><div class="val up" style="color:#ffb96b">+45%</div></div>
+              <div class="fstat"><div class="lbl">Публикаций</div><div class="val">12</div></div>
+            </div>
+            <div class="fire-actions">
+              <button class="mute-btn muted">🔇 Замьючен (0:38)</button>
+              <button class="act">Разобрать</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="block-title">Настройка правил Spike-алертов</div>
+
+        <div class="rules">
+          <div class="rule">
+            <div class="rule-sentence">
+              Если количество <b style="color:#ff7b7d">негативных</b> публикаций превышает
+              <input type="number" value="15"> за
+              <input type="number" value="10"> минут — создать всплеск и уведомить.
+            </div>
+            <div class="slider-block">
+              <div class="slider-label"><span>Чувствительность детектора</span><b>Высокая</b></div>
+              <input type="range" min="0" max="100" value="72">
+            </div>
+            <div class="hint">Чем выше чувствительность, тем раньше система заметит аномалию, но тем больше ложных срабатываний.</div>
+          </div>
+
+          <div class="rule">
+            <div class="rule-sentence">
+              Не присылать повторные алерты по этой же теме в течение
+              <input type="number" value="120"> минут.
+            </div>
+            <div class="slider-block">
+              <div class="slider-label"><span>Кулдаун</span><b>2 часа</b></div>
+              <input type="range" min="15" max="480" value="120">
+            </div>
+            <div class="hint">Кулдаун действует на уровне кластера (сюжета), а не отдельного поста — защита от спама уведомлений.</div>
+          </div>
+
+          <div class="rule">
+            <div class="rule-sentence" style="margin-bottom:0">Каналы доставки уведомлений</div>
+            <div class="channel-row">
+              <label class="channel on"><input type="checkbox" checked>✈️ Telegram-бот</label>
+              <label class="channel on"><input type="checkbox" checked>✉️ Email</label>
+              <label class="channel"><input type="checkbox">🔔 Web-push</label>
+              <label class="channel"><input type="checkbox">📱 SMS</label>
+            </div>
+            <div class="hint">SMS рекомендуется только для уровня «Критический негатив» — тарифицируется.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ЭКРАН 3: АНАЛИТИКА                                   -->
+    <!-- ==================================================== -->
+    <section class="screen scroll" id="screen-analytics">
+      <div class="page">
+        <div class="page-title">
+          <h1>📊 Аналитика и сюжеты</h1>
+          <span class="sub">Период: 7 дней · Бренд А</span>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi"><div class="lbl">Всего упоминаний</div><div class="val num">1 284</div><div class="delta">▲ 12% к прошлой неделе</div></div>
+          <div class="kpi crit"><div class="lbl">Критический негатив</div><div class="val num">37</div><div class="delta bad">▲ 48% — требует внимания</div></div>
+          <div class="kpi"><div class="lbl">Среднее время реакции</div><div class="val num">6 мин</div><div class="delta good">▼ 3 мин к прошлой неделе</div></div>
+          <div class="kpi"><div class="lbl">Дедупликация</div><div class="val num">68%</div><div class="delta">873 поста схлопнуто в 142 сюжета</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Динамика упоминаний</h2>
+            <span class="sub">клик по столбцу фильтрует ленту по этому срезу</span>
+            <div class="spacer"></div>
+            <div class="legend">
+              <span><i style="background:#2ecc71"></i>Позитив</span>
+              <span><i style="background:#4a5568"></i>Нейтральные</span>
+              <span><i style="background:#ff9f43"></i>Негатив</span>
+              <span><i style="background:#ff4d4f"></i>Критический</span>
+            </div>
+          </div>
+          <div class="timeline">
+            <div class="tl-bars" id="tl-bars"></div>
+            <div class="tl-axis" id="tl-axis"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head"><h2>Карта семантических кластеров</h2><span class="sub">размер пузыря = охват темы</span></div>
+            <div class="bubbles" id="bubbles"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h2>Share of Voice</h2><span class="sub">где нас ругают чаще</span></div>
+            <div id="sov"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ЭКРАН 4: НАСТРОЙКИ                                   -->
+    <!-- ==================================================== -->
+    <section class="screen scroll" id="screen-settings">
+      <div class="page" style="max-width:960px">
+        <div class="page-title"><h1>⚙️ Настройки бренда и источников</h1></div>
+
+        <div class="tabs">
+          <button class="tab on" data-tab="brand">Бренд</button>
+          <button class="tab" data-tab="sources">Источники</button>
+        </div>
+
+        <div id="tab-brand">
+          <div class="panel">
+            <div class="form-row">
+              <label>Ключевые слова бренда</label>
+              <div class="desc">Название компании, продуктов, домены, транслитерации и типичные опечатки. По ним система находит релевантные упоминания.</div>
+              <div class="tag-input">
+                <span class="tag kw">Бренд А <span class="x">✕</span></span>
+                <span class="tag kw">БрендА <span class="x">✕</span></span>
+                <span class="tag kw">brand-a.ru <span class="x">✕</span></span>
+                <span class="tag kw">Бренд А Приложение <span class="x">✕</span></span>
+                <input placeholder="Добавить слово и нажать Enter…">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>Минус-слова (исключения)</label>
+              <div class="desc">Отсекают омонимы и мусор. Публикации с этими словами не попадают в ленту.</div>
+              <div class="tag-input">
+                <span class="tag minus">бренд-менеджер <span class="x">✕</span></span>
+                <span class="tag minus">брендинг <span class="x">✕</span></span>
+                <span class="tag minus">вакансия <span class="x">✕</span></span>
+                <input placeholder="Добавить исключение…">
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-bottom:0">
+              <label>Словарь Risk-слов</label>
+              <div class="desc">Триггеры, автоматически повышающие приоритет поста в ленте и участвующие в детекции всплесков.</div>
+              <div class="tag-input">
+                <span class="tag risk">мошенники <span class="x">✕</span></span>
+                <span class="tag risk">упал <span class="x">✕</span></span>
+                <span class="tag risk">суд <span class="x">✕</span></span>
+                <span class="tag risk">взрыв <span class="x">✕</span></span>
+                <span class="tag risk">слив <span class="x">✕</span></span>
+                <span class="tag risk">обман <span class="x">✕</span></span>
+                <span class="tag risk">не работает <span class="x">✕</span></span>
+                <input placeholder="Добавить risk-слово…">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-sources" style="display:none">
+          <div class="panel">
+            <div class="panel-head"><h2>Подключённые парсеры</h2><span class="spacer"></span>
+              <button class="act primary">+ Добавить источник</button>
+            </div>
+            <table class="src-table">
+              <thead><tr><th>Источник</th><th>Тип</th><th>Статус</th><th>Последние данные</th><th style="text-align:right">Вкл/Выкл</th></tr></thead>
+              <tbody>
+                <tr><td>✈️ @breaking_news</td><td>Telegram-канал</td><td><span class="st ok">OK</span></td><td class="num">2 сек назад</td><td style="text-align:right"><div class="toggle on" style="margin-left:auto"></div></td></tr>
+                <tr><td>✈️ @market_insider</td><td>Telegram-канал</td><td><span class="st ok">OK</span></td><td class="num">5 сек назад</td><td style="text-align:right"><div class="toggle on" style="margin-left:auto"></div></td></tr>
+                <tr><td>📰 RB.ru</td><td>RSS-лента</td><td><span class="st ok">OK</span></td><td class="num">1 мин назад</td><td style="text-align:right"><div class="toggle on" style="margin-left:auto"></div></td></tr>
+                <tr><td>📰 Ведомости</td><td>RSS-лента</td><td><span class="st warn">Задержка</span></td><td class="num">14 мин назад</td><td style="text-align:right"><div class="toggle on" style="margin-left:auto"></div></td></tr>
+                <tr><td>🅥 VK API</td><td>API соцсети</td><td><span class="st err">Ошибка 403</span></td><td class="num">15 мин назад</td><td style="text-align:right"><div class="toggle on" style="margin-left:auto"></div></td></tr>
+                <tr><td>⭐ Отзовики</td><td>Парсер HTML</td><td><span class="st ok">OK</span></td><td class="num">3 мин назад</td><td style="text-align:right"><div class="toggle on" style="margin-left:auto"></div></td></tr>
+                <tr><td>💬 Форумы (auto.ru)</td><td>Парсер HTML</td><td><span class="st info">Отключён</span></td><td class="num">—</td><td style="text-align:right"><div class="toggle" style="margin-left:auto"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ЭКРАН 5: HEALTH & LOGS                               -->
+    <!-- ==================================================== -->
+    <section class="screen scroll" id="screen-health">
+      <div class="page">
+        <div class="page-title">
+          <h1>🩺 Здоровье системы и журнал</h1>
+          <span class="sub">для тимлида / системного инженера</span>
+          <div class="spacer" style="flex:1"></div>
+          <div class="pill"><span class="status-dot ok"></span>Контур работает · аптайм 99.94%</div>
+        </div>
+
+        <div class="block-title">Коннекторы к источникам</div>
+        <div class="conn-grid">
+          <div class="conn"><div class="conn-head"><span>✈️</span><b>Collector Telegram</b><span class="status ok">OK</span></div>
+            <div class="conn-metrics"><span>Задержка: <b>2 сек</b></span><span>Событий/мин: <b>143</b></span></div></div>
+
+          <div class="conn"><div class="conn-head"><span>📰</span><b>Collector RSS</b><span class="status ok">OK</span></div>
+            <div class="conn-metrics"><span>Задержка: <b>48 сек</b></span><span>Событий/мин: <b>21</b></span></div></div>
+
+          <div class="conn err"><div class="conn-head"><span>🅥</span><b>Collector VK</b><span class="status err">ОШИБКА</span></div>
+            <div class="conn-metrics"><span>Код: <b>403</b></span><span>Без данных: <b>15 мин</b></span></div>
+            <div class="conn-err">⚠ Access token истёк. Требуется переавторизация приложения.</div></div>
+
+          <div class="conn warn"><div class="conn-head"><span>📰</span><b>Collector Ведомости</b><span class="status warn">ЗАДЕРЖКА</span></div>
+            <div class="conn-metrics"><span>Задержка: <b>14 мин</b></span><span>Норма: <b>&lt; 2 мин</b></span></div>
+            <div class="conn-err">⚠ RSS-лента отвечает медленно (timeout 12s), включён retry.</div></div>
+
+          <div class="conn"><div class="conn-head"><span>⭐</span><b>Collector Отзовики</b><span class="status ok">OK</span></div>
+            <div class="conn-metrics"><span>Задержка: <b>3 мин</b></span><span>Событий/мин: <b>6</b></span></div></div>
+
+          <div class="conn"><div class="conn-head"><span>🧠</span><b>ML-сервис (инференс)</b><span class="status ok">OK</span></div>
+            <div class="conn-metrics"><span>Инференс: <b>84 мс</b></span><span>Очередь: <b>12</b></span></div></div>
+
+          <div class="conn"><div class="conn-head"><span>🧩</span><b>Deduplicator</b><span class="status ok">OK</span></div>
+            <div class="conn-metrics"><span>Обработка: <b>31 мс</b></span><span>Схлопнуто за час: <b>412</b></span></div></div>
+
+          <div class="conn"><div class="conn-head"><span>🔥</span><b>Spike Detector</b><span class="status ok">OK</span></div>
+            <div class="conn-metrics"><span>Активных всплесков: <b>4</b></span><span>Алертов за сутки: <b>17</b></span></div></div>
+        </div>
+
+        <div class="block-title">Журнал событий (Audit Log)</div>
+        <div class="panel" style="padding:16px 6px 6px">
+          <table class="log-table">
+            <thead><tr><th>Время</th><th>Компонент</th><th>Событие</th><th>Статус</th></tr></thead>
+            <tbody>
+              <tr><td class="t">12:04:23</td><td class="comp">Spike Detector</td><td>Сгенерирован алерт по кластеру #12 «Сбой приложения»</td><td><span class="st ok">Отправлено в Telegram-бот</span></td></tr>
+              <tr><td class="t">12:03:58</td><td class="comp">Deduplicator</td><td>Схлопнуто 14 публикаций в кластер #12 (similarity ≥ 0.86)</td><td><span class="st info">OK</span></td></tr>
+              <tr><td class="t">12:03:41</td><td class="comp">ML Service</td><td>Классификация тональности: label=critical_negative, score=0.94</td><td><span class="st info">OK</span></td></tr>
+              <tr><td class="t">12:01:07</td><td class="comp">Collector VK</td><td>HTTP 403 при запросе wall.get — истёк access token</td><td><span class="st err">Ошибка</span></td></tr>
+              <tr><td class="t">11:58:12</td><td class="comp">Collector Telegram</td><td>Получено 143 новых сообщения из 4 каналов</td><td><span class="st ok">OK</span></td></tr>
+              <tr><td class="t">11:47:30</td><td class="comp">Operator UI</td><td>Оператор А. Ковалёва сменила тональность поста #88412 на «Негатив»</td><td><span class="st warn">ML feedback</span></td></tr>
+              <tr><td class="t">11:40:02</td><td class="comp">Alert Dispatcher</td><td>Всплеск #2 замьючен оператором на 2 часа</td><td><span class="st info">Кулдаун</span></td></tr>
+              <tr><td class="t">11:22:19</td><td class="comp">Collector RSS</td><td>Таймаут ленты «Ведомости» (12s), поставлен retry #2</td><td><span class="st warn">Retry</span></td></tr>
+              <tr><td class="t">11:15:44</td><td class="comp">ML Service</td><td>Перезагрузка модели toxicity-v3, инференс 84 мс</td><td><span class="st ok">OK</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="hotkeys">
+  <span><kbd>Space</kbd>взять в работу</span>
+  <span><kbd>↓</kbd>следующий пост</span>
+  <span><kbd>Esc</kbd>закрыть карточку</span>
+  <span><kbd>1–5</kbd>тональность</span>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= ДАННЫЕ ================= */
+const mentions = [
+  { id:1, tone:'crit', source:'Telegram', channel:'@breaking_news', time:'12:04', reach:'128 400', dupes:14, score:94, status:'new',
+    title:'«Бренд А» списал деньги за отменённую подписку — сотни жалоб',
+    snippet:'Пользователи массово сообщают: после отмены подписки <mark class="brand">Бренд А</mark> продолжает списывать средства. «Написали в поддержку — тишина, деньги не вернули», — <mark class="risk">мошенники</mark>, обсуждают в чате.',
+    explain:'Модель считает пост критически негативным: найдены risk-слова «деньги не вернули», «мошенники», прямое упоминание бренда «Бренд А», высокая плотность негативных конструкций (3 из 4 предложений).',
+    full:'Пользователи массово сообщают: после отмены подписки Бренд А продолжает списывать средства. «Отменил подписку ещё 10 дней назад, сегодня списали 599 ₽. Написали в поддержку — тишина, деньги не вернули», — пишет один из клиентов. В комментариях к посту уже более 200 аналогичных жалоб. Отдельные пользователи называют компанию мошенниками и призывают писать жалобу в Роспотребнадзор.',
+    log:['12:04:22 — Collector Telegram: пост получен','12:04:22 — Deduplicator: найдено 14 похожих публикаций','12:04:23 — ML: label=critical_negative, score=0.94','12:04:23 — Risk-слова: «мошенники», «деньги не вернули»','12:04:24 — Spike Detector: кластер #12, рост +400%','12:04:25 — Alert Dispatcher: уведомление отправлено в Telegram-бот'] },
+
+  { id:2, tone:'crit', source:'VK', channel:'Клуб потребителей', time:'11:47', reach:'42 100', dupes:27, score:91, status:'new',
+    title:'Массовый сбой приложения: пользователи не могут войти в личный кабинет',
+    snippet:'С <mark class="brand">Бренд А</mark> невозможно войти в приложение второй час. «Приложение <mark class="risk">упал</mark>о, оплата не проходит, поддержка молчит» — более 300 комментариев.',
+    explain:'Модель считает пост критически негативным: risk-слово «упал», упоминание бренда, признаки массовости («более 300 комментариев»), жалобы на недоступность сервиса.',
+    full:'С Бренд А невозможно войти в приложение второй час. «Приложение упало, оплата не проходит, поддержка молчит» — под постом более 300 комментариев с аналогичными жалобами. Часть пользователей сообщает о двойных списаниях при повторной попытке оплаты.',
+    log:['11:47:10 — Collector VK: пост получен','11:47:11 — Deduplicator: кластер #11 (27 дублей)','11:47:11 — ML: label=critical_negative, score=0.91','11:47:12 — Spike Detector: рост +260%','11:47:13 — Alert Dispatcher: Email + Telegram-бот'] },
+
+  { id:3, tone:'neg', source:'СМИ', channel:'RB.ru', time:'11:20', reach:'310 000', dupes:5, score:87, status:'work',
+    title:'Суд с клиентом: «Бренд А» проиграл апелляцию',
+    snippet:'Апелляционный <mark class="risk">суд</mark> встал на сторону потребителя в споре с <mark class="brand">Бренд А</mark>. Сумма иска — 480 тыс. рублей.',
+    explain:'Модель считает пост негативным: risk-слово «суд», упоминание бренда в контексте проигранного дела, нейтрально-деловой тон, но фактическая негативная окраска.',
+    full:'Апелляционный суд встал на сторону потребителя в споре с Бренд А. Сумма иска — 480 тыс. рублей, включая компенсацию морального вреда. Представители компании заявили о намерении обратиться в кассацию.',
+    log:['11:20:02 — Collector RSS: статья получена','11:20:03 — ML: label=negative, score=0.87','11:20:03 — Risk-слово: «суд»','11:20:05 — Оператор А. Ковалёва взяла в работу'] },
+
+  { id:4, tone:'neg', source:'Отзовики', channel:'Отзовик.ру', time:'10:58', reach:'3 400', dupes:0, score:82, status:'new',
+    title:'«Ужасный сервис, деньги не вернули» — отзыв, 1 звезда',
+    snippet:'Оформил заказ в <mark class="brand">Бренд А</mark>, товар не пришёл, <mark class="risk">деньги не вернули</mark>. Поддержка отвечает шаблонами.',
+    explain:'Модель считает отзыв негативным: risk-слова «деньги не вернули», «ужасный», низкая оценка (1 звезда), упоминание бренда.',
+    full:'Оформил заказ в Бренд А, товар не пришёл, деньги не вернули. Поддержка отвечает шаблонами уже третью неделю. Ужасный сервис, не рекомендую.',
+    log:['10:58:40 — Collector Отзовики: отзыв получен','10:58:41 — ML: label=negative, score=0.82'] },
+
+  { id:5, tone:'neu', source:'Telegram', channel:'@tech_news', time:'10:31', reach:'18 900', dupes:3, score:74, status:'new',
+    title:'«Бренд А» анонсировал обновление тарифной сетки',
+    snippet:'Компания <mark class="brand">Бренд А</mark> объявила о пересмотре тарифов с 1 числа следующего месяца. Подробности — в пресс-релизе.',
+    explain:'Модель считает публикацию нейтральной: информационный тон, отсутствуют оценочные и risk-слова, упоминание бренда нейтральное.',
+    full:'Компания Бренд А объявила о пересмотре тарифов с 1 числа следующего месяца. Подробности — в пресс-релизе на официальном сайте.',
+    log:['10:31:12 — Collector Telegram: пост получен','10:31:13 — ML: label=neutral, score=0.74'] },
+
+  { id:6, tone:'pos', source:'СМИ', channel:'ComNews', time:'09:52', reach:'96 000', dupes:8, score:89, status:'closed',
+    title:'«Бренд А» запустил программу лояльности для клиентов',
+    snippet:'<mark class="brand">Бренд А</mark> представил новую программу лояльности: кэшбэк до 15% и персональные скидки.',
+    explain:'Модель считает публикацию позитивной: лексика достижения («запустил», «представил»), положительные характеристики продукта, нет risk-слов.',
+    full:'Бренд А представил новую программу лояльности: кэшбэк до 15% и персональные скидки для постоянных клиентов. По оценке аналитиков, инициатива может увеличить retention на 8–12%.',
+    log:['09:52:03 — Collector RSS: статья получена','09:52:04 — ML: label=positive, score=0.89','09:52:30 — Оператор: пост закрыт'] },
+
+  { id:7, tone:'neg', source:'Telegram', channel:'@leaks_chat', time:'09:15', reach:'24 700', dupes:6, score:78, status:'new',
+    title:'«Слив базы клиентов «Бренд А»?» — обсуждение в канале',
+    snippet:'В канале утверждают, что в сеть попал <mark class="risk">слив</mark> базы пользователей <mark class="brand">Бренд А</mark>. Официального подтверждения нет.',
+    explain:'Модель считает пост негативным: risk-слово «слив», бренд в контексте утечки данных. Уверенность снижена из-за отсутствия подтверждения в тексте.',
+    full:'В канале утверждают, что в сеть попал слив базы пользователей Бренд А. Официального подтверждения нет, ссылка на файл не приложена. Администрация канала обещает «подтвердить позже».',
+    log:['09:15:20 — Collector Telegram: пост получен','09:15:21 — ML: label=negative, score=0.78','09:15:21 — Risk-слово: «слив»','09:15:22 — Spike Detector: всплеск #1'] },
+
+  { id:8, tone:'neu', source:'Отзовики', channel:'Отзовик.ру', time:'08:40', reach:'1 200', dupes:0, score:66, status:'false',
+    title:'Как поменять тариф в приложении?',
+    snippet:'Подскажите, как в приложении <mark class="brand">Бренд А</mark> поменять тариф на другой. Инструкция в справке не работает.',
+    explain:'Модель считает публикацию нейтральной (вопрос пользователя). Score ниже порога приоритизации — пост не поднимается в ленте.',
+    full:'Подскажите, как в приложении Бренд А поменять тариф на другой. Инструкция в справке не работает, поддержка отвечает долго.',
+    log:['08:40:11 — Collector Отзовики: отзыв получен','08:40:12 — ML: label=neutral, score=0.66','08:41:00 — Оператор: помечено «Ложное срабатывание»'] }
+];
+
+const toneMeta = {
+  crit:{ cls:'crit', label:'Критический негатив' },
+  neg :{ cls:'neg',  label:'Негатив' },
+  neu :{ cls:'neu',  label:'Нейтральные' },
+  pos :{ cls:'pos',  label:'Позитив' }
+};
+const srcIcon = { 'Telegram':'✈️', 'СМИ':'📰', 'VK':'🅥', 'Отзовики':'⭐' };
+
+/* ================= РОУТИНГ ================= */
+document.querySelectorAll('.nav-btn[data-screen]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+btn.dataset.screen).classList.add('active');
+  });
+});
+
+/* ================= ЛЕНТА ================= */
+let activeTone = 'all';
+
+function renderFeed(){
+  const list = document.getElementById('stream-list');
+  const items = mentions.filter(m => activeTone==='all' || m.tone===activeTone);
+  list.innerHTML = items.map(m=>{
+    const t = toneMeta[m.tone];
+    return `
+    <article class="card t-${m.tone}" data-id="${m.id}">
+      <div class="card-head">
+        <span class="src"><span class="ic">${srcIcon[m.source]||'•'}</span>${m.source} · ${m.channel}</span>
+        ${m.tone==='crit'?'<span class="pulse"></span>':''}
+        <span class="sep">|</span>
+        <span>сегодня, ${m.time}</span>
+        <span class="reach">👁 <span class="num">${m.reach}</span></span>
+      </div>
+      <h3>${m.title}</h3>
+      <p class="snippet">${m.snippet}</p>
+      <div class="verdict">
+        <span class="badge ${t.cls}">${t.label}</span>
+        <span class="score" data-tip="Explainable ML: ${m.explain}">Score: ${m.score}% <span class="q">ⓘ</span></span>
+        ${m.dupes>0?`<span class="dupes">Ещё ${m.dupes} похожих публикаций ▾</span>`:''}
+      </div>
+      <div class="actions">
+        <button class="act primary" data-act="take">Взять в работу <span class="k">Space</span></button>
+        <button class="act" data-act="ignore">Игнорировать</button>
+        <button class="act" data-act="export">Экспорт</button>
+        <button class="act" data-act="retone">Сменить тональность</button>
+      </div>
+    </article>`;
+  }).join('');
+  document.getElementById('count-info').textContent =
+    `Показано ${items.length} из 142 · обновлено 12 сек назад`;
+
+  list.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click',e=>{
+      if(e.target.closest('.act')) return;
+      openDrawer(+card.dataset.id);
+    });
+  });
+  list.querySelectorAll('.act').forEach(b=>{
+    b.addEventListener('click',e=>{
+      e.stopPropagation();
+      const map = { take:'✅ Взято в работу', ignore:'🚫 Проигнорировано', export:'📤 Экспортировано', retone:'🎚 Запрос на смену тональности отправлен в ML' };
+      showToast(map[b.dataset.act]);
+    });
+  });
+}
+
+document.querySelectorAll('#tone-filters .chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    document.querySelectorAll('#tone-filters .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    activeTone = chip.dataset.tone;
+    renderFeed();
+  });
+});
+
+document.querySelectorAll('#view-mode button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#view-mode button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    showToast(b.dataset.mode==='clusters' ? 'Режим: сюжеты / кластеры (дедублированные группы)' : 'Режим: поток всех постов');
+  });
+});
+
+const scoreRange = document.getElementById('score-range');
+scoreRange.addEventListener('input',()=>{
+  document.getElementById('score-val').textContent = '≥ '+scoreRange.value+'%';
+});
+
+/* аккордеоны фильтров */
+document.querySelectorAll('.acc-head').forEach(h=>{
+  h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
+});
+
+/* ================= DRAWER ================= */
+const drawer = document.getElementById('drawer');
+function openDrawer(id){
+  const m = mentions.find(x=>x.id===id); if(!m) return;
+  document.getElementById('dr-title').textContent = m.title;
+  document.getElementById('dr-src').textContent = (srcIcon[m.source]||'')+' '+m.source+' · '+m.channel;
+  document.getElementById('dr-time').textContent = 'сегодня, '+m.time;
+  document.getElementById('dr-reach').textContent = m.reach;
+  document.getElementById('dr-score').textContent = m.score+'% · '+toneMeta[m.tone].label;
+  document.getElementById('dr-text').innerHTML = m.full;
+  document.getElementById('dr-explain').textContent = m.explain;
+  document.getElementById('dr-log').innerHTML = m.log.map(l=>{
+    const [t,...rest] = l.split(' — ');
+    return `<div class="log-line"><span class="t">${t}</span><span>${rest.join(' — ')}</span></div>`;
+  }).join('');
+  drawer.classList.add('open');
+}
+document.getElementById('dr-close').addEventListener('click',()=>drawer.classList.remove('open'));
+
+/* ================= АНАЛИТИКА ================= */
+const tlData = [
+  [3,9,2,0],[4,8,3,1],[6,7,4,0],[5,9,2,0],[7,6,3,1],
+  [9,5,4,2],[12,7,6,3],[15,6,9,5],[10,8,5,2],[8,9,3,1],
+  [7,11,4,0],[6,10,3,1],[9,8,5,2],[11,7,4,1],[13,6,6,2],
+  [16,5,8,4],[12,7,5,2],[9,9,3,1],[7,10,4,0],[8,8,3,1],
+  [10,7,4,2],[12,6,5,3],[9,8,3,1],[6,9,2,0]
+];
+const tlBars = document.getElementById('tl-bars');
+const tlAxis = document.getElementById('tl-axis');
+const maxV = Math.max(...tlData.map(d=>d[0]+d[1]+d[2]+d[3]));
+tlData.forEach((d,i)=>{
+  const [pos,neu,neg,crit] = d;
+  const h = v => (v/maxV*100)+'%';
+  const col = document.createElement('div');
+  col.className = 'tl-col';
+  col.innerHTML =
+    (crit>0?`<span class="tl-bolt">⚡</span>`:'')+
+    `<div class="tl-seg crit" style="height:${h(crit)}"></div>`+
+    `<div class="tl-seg neg"  style="height:${h(neg)}"></div>`+
+    `<div class="tl-seg neu"  style="height:${h(neu)}"></div>`+
+    `<div class="tl-seg pos"  style="height:${h(pos)}"></div>`;
+  col.title = `${i}:00 — позитив ${pos}, нейтральные ${neu}, негатив ${neg}, критический ${crit}`;
+  col.addEventListener('click',()=>{
+    showToast(`Лента отфильтрована по срезу ${String(i).padStart(2,'0')}:00`);
+    document.querySelector('.nav-btn[data-screen="feed"]').click();
+  });
+  tlBars.appendChild(col);
+  const a = document.createElement('span'); a.textContent = String(i).padStart(2,'0');
+  tlAxis.appendChild(a);
+});
+
+/* пузыри */
+const bubblesData = [
+  {t:'Сбой приложения',  x:50, y:44, s:150, c:'rgba(255,77,79,.35)'},
+  {t:'Списание денег',   x:24, y:30, s:120, c:'rgba(255,77,79,.3)'},
+  {t:'Суд с клиентом',   x:74, y:28, s:100, c:'rgba(255,159,67,.32)'},
+  {t:'Служба поддержки', x:30, y:72, s:96,  c:'rgba(255,159,67,.28)'},
+  {t:'Обновление тарифов',x:72,y:70, s:88,  c:'rgba(76,141,255,.28)'},
+  {t:'Программа лояльности',x:50,y:80,s:70, c:'rgba(46,204,113,.28)'},
+  {t:'Утечка данных',    x:14, y:56, s:62,  c:'rgba(255,77,79,.28)'}
+];
+const bub = document.getElementById('bubbles');
+bubblesData.forEach(b=>{
+  const el = document.createElement('div');
+  el.className='bub';
+  el.style.cssText = `width:${b.s}px;height:${b.s}px;left:calc(${b.x}% - ${b.s/2}px);top:calc(${b.y}% - ${b.s/2}px);background:${b.c}`;
+  el.textContent = b.t;
+  bub.appendChild(el);
+});
+
+/* share of voice */
+const sovData = [
+  {s:'✈️ Telegram', neg:62, neu:27, pos:11, total:'486 упоминаний'},
+  {s:'📰 СМИ',      neg:41, neu:47, pos:12, total:'312 упоминаний'},
+  {s:'🅥 VK',        neg:55, neu:33, pos:12, total:'214 упоминаний'},
+  {s:'⭐ Отзовики',  neg:71, neu:19, pos:10, total:'198 упоминаний'}
+];
+document.getElementById('sov').innerHTML = sovData.map(d=>`
+  <div class="sov-row">
+    <div class="sov-top"><span>${d.s}</span><span class="num">${d.total}</span></div>
+    <div class="sov-bar">
+      <div style="width:${d.neg}%;background:#ff4d4f"></div>
+      <div style="width:${d.neu}%;background:#4a5568"></div>
+      <div style="width:${d.pos}%;background:#2ecc71"></div>
+    </div>
+  </div>
+`).join('');
+
+/* ================= НАСТРОЙКИ ================= */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById('tab-brand').style.display = t.dataset.tab==='brand'?'block':'none';
+    document.getElementById('tab-sources').style.display = t.dataset.tab==='sources'?'block':'none';
+  });
+});
+document.querySelectorAll('.toggle').forEach(t=>t.addEventListener('click',()=>t.classList.toggle('on')));
+
+/* ================= ХОТКЕИ ================= */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') drawer.classList.remove('open');
+  if(e.code==='Space' && !e.target.matches('input,textarea')){
+    e.preventDefault(); showToast('✅ Публикация взята в работу');
+  }
+});
+
+/* ================= TOAST ================= */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+/* старт */
+renderFeed();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<template>
+  <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <rect width="400" height="240" fill="#DCE8E6"></rect>
+    <rect x="24" y="150" width="90" height="66" rx="14" fill="#21403F"></rect>
+    <circle cx="220" cy="120" r="96" fill="#4F8583"></circle>
+    <ellipse
+      cx="220"
+      cy="120"
+      rx="24"
+      ry="96"
+      fill="none"
+      stroke="#DCE8E6"
+      stroke-opacity=".75"
+      stroke-width="2"
+    ></ellipse>
+    <ellipse
+      cx="220"
+      cy="120"
+      rx="52"
+      ry="96"
+      fill="none"
+      stroke="#DCE8E6"
+      stroke-opacity=".75"
+      stroke-width="2"
+    ></ellipse>
+    <ellipse
+      cx="220"
+      cy="120"
+      rx="81"
+      ry="96"
+      fill="none"
+      stroke="#DCE8E6"
+      stroke-opacity=".75"
+      stroke-width="2"
+    ></ellipse>
+    <line
+      x1="137"
+      x2="303"
+      y1="72"
+      y2="72"
+      stroke="#DCE8E6"
+      stroke-opacity=".6"
+      stroke-width="2"
+    ></line>
+    <line
+      x1="124"
+      x2="316"
+      y1="120"
+      y2="120"
+      stroke="#DCE8E6"
+      stroke-opacity=".6"
+      stroke-width="2"
+    ></line>
+    <line
+      x1="137"
+      x2="303"
+      y1="168"
+      y2="168"
+      stroke="#DCE8E6"
+      stroke-opacity=".6"
+      stroke-width="2"
+    ></line>
+    <circle cx="260" cy="90" r="9" fill="#BD6046"></circle>
+  </svg>
+</template>

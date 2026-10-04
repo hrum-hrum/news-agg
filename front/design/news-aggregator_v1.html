@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Лента — новости из разных источников</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Golos Text"', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+        colors: {
+          paper:   'rgb(var(--paper) / <alpha-value>)',
+          surface: 'rgb(var(--surface) / <alpha-value>)',
+          sunk:    'rgb(var(--sunk) / <alpha-value>)',
+          ink:     'rgb(var(--ink) / <alpha-value>)',
+          mute:    'rgb(var(--mute) / <alpha-value>)',
+          line:    'rgb(var(--line) / <alpha-value>)',
+          clay:    'rgb(var(--clay) / <alpha-value>)',
+          sage:    'rgb(var(--sage) / <alpha-value>)',
+          sky:     'rgb(var(--sky) / <alpha-value>)'
+        }
+      }
+    }
+  };
+</script>
+
+<style>
+  /* ---------- Токены (каналы RGB, чтобы работали alpha-модификаторы) ---------- */
+  :root {
+    --paper: 243 241 236;
+    --surface: 251 250 247;
+    --sunk: 234 231 224;
+    --ink: 42 41 38;
+    --mute: 106 102 94;
+    --line: 226 221 211;
+    --clay: 189 96 70;
+    --clay-soft: 245 228 220;
+    --clay-ink: 140 62 42;
+    --on-clay: 255 255 255;
+    --sage: 96 128 108;
+    --sky: 106 131 160;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: 27 26 24;
+      --surface: 36 35 32;
+      --sunk: 47 45 41;
+      --ink: 236 233 226;
+      --mute: 165 160 150;
+      --line: 63 61 56;
+      --clay: 224 132 106;
+      --clay-soft: 68 46 39;
+      --clay-ink: 240 172 150;
+      --on-clay: 32 27 23;
+      --sage: 140 175 152;
+      --sky: 150 173 200;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: 27 26 24;
+    --surface: 36 35 32;
+    --sunk: 47 45 41;
+    --ink: 236 233 226;
+    --mute: 165 160 150;
+    --line: 63 61 56;
+    --clay: 224 132 106;
+    --clay-soft: 68 46 39;
+    --clay-ink: 240 172 150;
+    --on-clay: 32 27 23;
+    --sage: 140 175 152;
+    --sky: 150 173 200;
+    color-scheme: dark;
+  }
+
+  /* ---------- База ---------- */
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+  body {
+    background: rgb(var(--paper));
+    color: rgb(var(--ink));
+    font-feature-settings: "kern", "liga";
+    min-height: 100vh;
+  }
+  ::selection { background: rgb(var(--clay) / .28); }
+  :focus-visible { outline: 2px solid rgb(var(--clay)); outline-offset: 2px; border-radius: 8px; }
+  [hidden] { display: none !important; }
+  mark { background: rgb(var(--clay) / .22); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+  .ico { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* ---------- Шапка ---------- */
+  .site-header {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30;
+    background: rgb(var(--paper) / .86);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgb(var(--line));
+  }
+  .logo rect { transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
+  .logo:hover rect:nth-child(1) { transform: translateX(-2px); }
+  .logo:hover rect:nth-child(2) { transform: translateX(5px); }
+  .logo:hover rect:nth-child(3) { transform: translateX(2px); }
+
+  .search {
+    display: flex; align-items: center; gap: .6rem; height: 2.75rem; padding: 0 .9rem;
+    background: rgb(var(--sunk)); border: 1px solid transparent; border-radius: .9rem;
+    transition: background .2s, border-color .2s, box-shadow .2s;
+  }
+  .search:hover { border-color: rgb(var(--line)); }
+  .search:focus-within { background: rgb(var(--surface)); border-color: rgb(var(--clay) / .7); box-shadow: 0 0 0 4px rgb(var(--clay) / .14); }
+  .search input { flex: 1; min-width: 0; background: transparent; outline: none; font-size: .9375rem; color: rgb(var(--ink)); }
+  .search input::placeholder { color: rgb(var(--mute) / .85); }
+  .kbd { font-size: .75rem; line-height: 1; padding: .28rem .45rem; border-radius: .4rem; border: 1px solid rgb(var(--line)); color: rgb(var(--mute)); background: rgb(var(--surface)); }
+
+  /* ---------- Кнопки и элементы управления ---------- */
+  .ibtn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+    height: 2.5rem; min-width: 2.5rem; padding: 0 .7rem; border-radius: .8rem;
+    color: rgb(var(--ink) / .85); font-size: .875rem; font-weight: 500; cursor: pointer;
+    transition: background .18s, transform .18s, color .18s;
+  }
+  .ibtn:hover { background: rgb(var(--sunk)); transform: translateY(-1px); }
+  .ibtn:active { transform: translateY(0) scale(.96); }
+  .ibtn .ico { font-size: 1.15rem; }
+  .ibtn[aria-pressed="true"] { background: rgb(var(--clay-soft)); color: rgb(var(--clay-ink)); }
+  .ibtn[aria-pressed="true"] .ico { fill: currentColor; }
+  .badge { min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem; display: inline-grid; place-items: center; border-radius: 999px; font-size: .72rem; font-weight: 600; background: rgb(var(--ink)); color: rgb(var(--paper)); }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+    height: 2.9rem; padding: 0 1.4rem; border-radius: .9rem; font-weight: 600; font-size: .9375rem;
+    background: rgb(var(--clay)); color: rgb(var(--on-clay)); cursor: pointer;
+    transition: transform .2s cubic-bezier(.3,1.4,.5,1), box-shadow .2s, filter .2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -10px rgb(var(--clay) / .75); filter: brightness(1.05); }
+  .btn-primary:active { transform: translateY(0) scale(.98); box-shadow: none; }
+  .btn-primary .ico { transition: transform .25s; }
+  .btn-primary:hover .ico { transform: translateY(2px); }
+
+  .btn-quiet {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    height: 2.6rem; padding: 0 1.1rem; border-radius: .8rem; font-weight: 500; font-size: .9rem;
+    border: 1px solid rgb(var(--line)); background: rgb(var(--surface)); color: rgb(var(--ink)); cursor: pointer;
+    transition: transform .2s, border-color .2s, background .2s;
+  }
+  .btn-quiet:hover { transform: translateY(-1px); border-color: rgb(var(--ink) / .35); background: rgb(var(--sunk)); }
+  .btn-quiet:active { transform: translateY(0) scale(.98); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: .35rem; height: 1.8rem; padding: 0 .7rem;
+    border-radius: 999px; border: 1px solid rgb(var(--line)); background: rgb(var(--surface));
+    font-size: .8125rem; line-height: 1; color: rgb(var(--ink) / .82); cursor: pointer; white-space: nowrap;
+    transition: background .18s, border-color .18s, color .18s, transform .18s;
+  }
+  .chip:hover { background: rgb(var(--clay-soft)); border-color: rgb(var(--clay) / .5); color: rgb(var(--clay-ink)); transform: translateY(-1px); }
+  .chip:active { transform: translateY(0) scale(.96); }
+  .chip[aria-pressed="true"] { background: rgb(var(--clay)); border-color: rgb(var(--clay)); color: rgb(var(--on-clay)); }
+  .chip.applied { background: rgb(var(--clay-soft)); border-color: rgb(var(--clay) / .45); color: rgb(var(--clay-ink)); }
+  .chip.applied .ico { transition: transform .2s; }
+  .chip.applied:hover .ico { transform: rotate(90deg); }
+  .chip.sm { height: 1.5rem; padding: 0 .55rem; font-size: .75rem; background: transparent; color: rgb(var(--mute)); }
+
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: .85rem; background: rgb(var(--sunk)); }
+  .seg button {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem; height: 2rem; padding: 0 .8rem;
+    border-radius: .65rem; font-size: .8125rem; font-weight: 500; color: rgb(var(--mute)); cursor: pointer; white-space: nowrap;
+    transition: background .18s, color .18s, transform .18s, box-shadow .18s;
+  }
+  .seg button:hover { color: rgb(var(--ink)); }
+  .seg button:active { transform: scale(.95); }
+  .seg button[aria-pressed="true"] { background: rgb(var(--surface)); color: rgb(var(--ink)); box-shadow: 0 1px 2px rgb(0 0 0 / .1); }
+  .seg .ico { font-size: 1rem; }
+
+  .navrow {
+    display: flex; align-items: center; justify-content: space-between; gap: .6rem; width: 100%; text-align: left;
+    padding: .5rem .7rem; border-radius: .7rem; font-size: .9rem; color: rgb(var(--ink) / .85); cursor: pointer;
+    transition: background .18s, transform .18s;
+  }
+  .navrow:hover { background: rgb(var(--sunk)); transform: translateX(2px); }
+  .navrow[aria-current="true"] { background: rgb(var(--surface)); box-shadow: inset 0 0 0 1px rgb(var(--line)); font-weight: 600; color: rgb(var(--ink)); }
+  .navrow .cnt { font-size: .78rem; color: rgb(var(--mute)); font-variant-numeric: tabular-nums; }
+  .dot { width: .6rem; height: .6rem; border-radius: 3px; display: inline-block; flex: none; }
+  .mono { width: 1.3rem; height: 1.3rem; border-radius: .4rem; display: inline-grid; place-items: center; font-size: .56rem; font-weight: 700; color: #fff; flex: none; letter-spacing: 0; }
+
+  .rail { display: flex; gap: .5rem; overflow-x: auto; scrollbar-width: none; margin-inline: -1rem; padding-inline: 1rem; padding-block: 2px; }
+  .rail::-webkit-scrollbar { display: none; }
+  @media (min-width: 640px) { .rail { margin-inline: -1.5rem; padding-inline: 1.5rem; } }
+
+  /* ---------- Карточки ---------- */
+  .card {
+    display: flex; flex-direction: column; background: rgb(var(--surface)); border: 1px solid rgb(var(--line));
+    border-radius: 1.35rem; padding: .5rem; transition: border-color .2s;
+  }
+  .card:hover { border-color: rgb(var(--ink) / .28); }
+  .cover { position: relative; overflow: hidden; border-radius: 1rem; aspect-ratio: 5 / 3; cursor: pointer; background: rgb(var(--sunk)); }
+  .cover svg { width: 100%; height: 100%; display: block; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+  .card:hover .cover svg, .rowitem:hover .cover svg { transform: scale(1.045); }
+  .cat-pill {
+    position: absolute; left: .6rem; bottom: .6rem; display: inline-flex; align-items: center; gap: .4rem;
+    height: 1.55rem; padding: 0 .6rem; border-radius: 999px; font-size: .75rem; font-weight: 500;
+    background: rgb(var(--surface) / .92); color: rgb(var(--ink)); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .title-btn { text-align: left; cursor: pointer; transition: color .18s; }
+  .title-btn:hover { color: rgb(var(--clay-ink)); }
+
+  .card-feature { flex-direction: column; }
+  @media (min-width: 768px) {
+    .card-feature { flex-direction: row; align-items: stretch; }
+    .card-feature .cover { width: 54%; aspect-ratio: auto; min-height: 300px; flex: none; }
+  }
+
+  .rowlist { background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 1.35rem; overflow: hidden; }
+  .rowitem { display: flex; gap: 1rem; padding: 1rem; border-bottom: 1px solid rgb(var(--line)); transition: background .2s; }
+  .rowitem:last-child { border-bottom: 0; }
+  .rowitem:hover { background: rgb(var(--sunk) / .55); }
+  .rowitem .cover { width: 6.5rem; height: 5rem; aspect-ratio: auto; flex: none; border-radius: .8rem; }
+  @media (min-width: 640px) { .rowitem { padding: 1.1rem 1.25rem; gap: 1.25rem; } .rowitem .cover { width: 10.5rem; height: 6.75rem; } }
+
+  .act { display: inline-flex; align-items: center; gap: .4rem; font-size: .8125rem; color: rgb(var(--mute)); font-variant-numeric: tabular-nums; }
+  .act .ico { font-size: 1rem; }
+  .like { cursor: pointer; padding: .3rem .55rem .3rem .4rem; margin-left: -.4rem; border-radius: .6rem; transition: background .18s, color .18s, transform .18s; }
+  .like:hover { background: rgb(var(--clay-soft)); color: rgb(var(--clay-ink)); transform: translateY(-1px); }
+  .like:active { transform: scale(.94); }
+  .like[aria-pressed="true"] { color: rgb(var(--clay-ink)); }
+  .like[aria-pressed="true"] .ico { fill: rgb(var(--clay)); stroke: rgb(var(--clay)); }
+  .like.pop .ico { animation: pop .42s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes pop { 0% { transform: scale(.7); } 55% { transform: scale(1.4); } 100% { transform: scale(1); } }
+  .rate .ico { fill: rgb(var(--clay)); stroke: rgb(var(--clay)); }
+
+  /* ---------- Модальное окно ---------- */
+  #modal[hidden] { display: none !important; }
+  .modal-backdrop { animation: fade .22s ease both; }
+  .modal-panel { animation: sheet .32s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes sheet { from { opacity: 0; transform: translateY(24px) scale(.985); } to { opacity: 1; transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .feed-in { animation: feed .3s ease both; }
+  @keyframes feed { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .star { cursor: pointer; padding: .2rem; border-radius: .5rem; color: rgb(var(--mute) / .55); transition: transform .18s cubic-bezier(.3,1.6,.5,1), color .15s; }
+  .star .ico { font-size: 1.9rem; }
+  .star:hover { transform: scale(1.18) rotate(-6deg); }
+  .star:active { transform: scale(.95); }
+  .star.on { color: rgb(var(--clay)); }
+  .star.on .ico { fill: currentColor; }
+
+  .related { display: flex; align-items: center; gap: .75rem; width: 100%; text-align: left; padding: .65rem .75rem; border-radius: .8rem; transition: background .18s, transform .18s; cursor: pointer; }
+  .related:hover { background: rgb(var(--sunk)); transform: translateX(3px); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); z-index: 60;
+    transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+    background: rgb(var(--ink)); color: rgb(var(--paper)); padding: .7rem 1.1rem; border-radius: .9rem; font-size: .875rem;
+    transition: opacity .25s, transform .25s; max-width: calc(100vw - 2rem);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .flink { cursor: pointer; color: rgb(var(--ink) / .8); font-size: .9rem; text-align: left; background-image: linear-gradient(currentColor, currentColor); background-size: 0 1px; background-repeat: no-repeat; background-position: 0 100%; transition: background-size .25s, color .2s; }
+  .flink:hover { background-size: 100% 1px; color: rgb(var(--clay-ink)); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  }
+</style>
+</head>
+
+<body class="font-sans antialiased">
+  <a id="top"></a>
+
+  <!-- ================= ХЕДЕР ================= -->
+  <header class="site-header">
+    <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 md:flex-nowrap md:gap-6">
+      <a href="#top" class="logo order-1 flex items-center gap-2.5" aria-label="Лента — на главную">
+        <svg viewBox="0 0 28 28" width="28" height="28" aria-hidden="true">
+          <rect x="3" y="5"  width="22" height="5" rx="2.5" fill="rgb(189 96 70)"/>
+          <rect x="3" y="12" width="15" height="5" rx="2.5" fill="rgb(96 128 108)"/>
+          <rect x="3" y="19" width="19" height="5" rx="2.5" fill="rgb(106 131 160)"/>
+        </svg>
+        <span class="text-xl font-bold tracking-[-0.03em]">Лента</span>
+      </a>
+
+      <div class="order-3 basis-full md:order-2 md:basis-auto md:flex-1 md:max-w-xl">
+        <label class="search" for="q">
+          <svg class="ico text-mute" style="font-size:1.1rem" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Поиск по заголовкам, темам и тегам" aria-label="Быстрый поиск">
+          <button id="qClear" class="ibtn" style="height:1.9rem;min-width:1.9rem;padding:0" data-clear="q" aria-label="Очистить поиск" hidden>
+            <svg class="ico" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <span id="qKbd" class="kbd hidden sm:inline">/</span>
+        </label>
+      </div>
+
+      <div class="order-2 ml-auto md:order-3">
+        <button class="ibtn" data-toggle-liked aria-pressed="false" aria-label="Показать понравившиеся">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span class="hidden sm:inline">Понравилось</span>
+          <span id="likedBadge" class="badge" hidden>0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= ОСНОВНОЙ КОНТЕНТ ================= -->
+  <main class="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:pt-10">
+    <div class="mb-6 max-w-2xl lg:mb-8">
+      <h1 class="text-[2rem] font-bold leading-[1.1] tracking-[-0.035em] sm:text-4xl">Новости дня из&nbsp;разных источников</h1>
+      <p class="mt-3 text-[15px] leading-relaxed text-mute">Заголовки восьми редакций собраны в одну ленту. Отмечайте понравившееся, оценивайте материалы и фильтруйте по темам. Обновлено в <span id="updated">—</span>.</p>
+    </div>
+
+    <!-- Мобильные фильтры -->
+    <div class="mb-5 space-y-2 lg:hidden">
+      <div class="rail" data-slot="cats-m" aria-label="Категории"></div>
+      <div class="rail" data-slot="tags-m" aria-label="Теги"></div>
+    </div>
+
+    <div class="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <!-- Сайдбар -->
+      <aside class="hidden lg:block lg:sticky lg:top-24 lg:max-h-[calc(100vh-7.5rem)] lg:self-start lg:overflow-y-auto lg:pr-2" aria-label="Фильтры">
+        <section>
+          <h2 class="mb-2 px-2 text-sm font-semibold">Категории</h2>
+          <nav class="space-y-0.5" data-slot="cats"></nav>
+        </section>
+        <section class="mt-7">
+          <h2 class="mb-2 px-2 text-sm font-semibold">Источники</h2>
+          <nav class="space-y-0.5" data-slot="srcs"></nav>
+        </section>
+        <section class="mt-7">
+          <h2 class="mb-3 px-2 text-sm font-semibold">Популярные теги</h2>
+          <div class="flex flex-wrap gap-1.5 px-1" data-slot="tags"></div>
+        </section>
+      </aside>
+
+      <!-- Лента -->
+      <section aria-label="Лента новостей" class="min-w-0">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p id="count" class="text-sm text-mute" aria-live="polite"></p>
+          <div class="flex items-center gap-2">
+            <div class="min-w-0 overflow-x-auto" style="scrollbar-width:none">
+              <div class="seg" role="group" aria-label="Сортировка">
+                <button data-sort="new">Свежие</button>
+                <button data-sort="views">Просмотры</button>
+                <button data-sort="rating">Рейтинг</button>
+                <button data-sort="likes">Лайки</button>
+              </div>
+            </div>
+            <div class="seg shrink-0" role="group" aria-label="Вид ленты">
+              <button data-view="grid" aria-label="Карточки"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg></button>
+              <button data-view="list" aria-label="Список"><svg class="ico" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="applied" class="mt-4 flex flex-wrap items-center gap-2" hidden></div>
+
+        <div id="feed" class="mt-5"></div>
+
+        <div id="more" class="mt-8 flex justify-center" hidden></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ================= ФУТЕР ================= -->
+  <footer class="border-t border-line bg-sunk/60">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+      <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div class="max-w-sm">
+          <div class="flex items-center gap-2.5">
+            <svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true">
+              <rect x="3" y="5"  width="22" height="5" rx="2.5" fill="rgb(189 96 70)"/>
+              <rect x="3" y="12" width="15" height="5" rx="2.5" fill="rgb(96 128 108)"/>
+              <rect x="3" y="19" width="19" height="5" rx="2.5" fill="rgb(106 131 160)"/>
+            </svg>
+            <span class="text-lg font-bold tracking-[-0.03em]">Лента</span>
+          </div>
+          <p class="mt-4 text-[15px] leading-relaxed text-mute">Агрегатор, который собирает новости разных редакций в одном месте и помогает быстро найти то, что интересно именно вам.</p>
+          <button class="btn-quiet mt-5" data-top>
+            <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+            Наверх
+          </button>
+        </div>
+        <div>
+          <h2 class="mb-3 text-sm font-semibold">Разделы</h2>
+          <ul class="grid gap-2" id="footCats"></ul>
+        </div>
+        <div>
+          <h2 class="mb-3 text-sm font-semibold">Источники</h2>
+          <ul class="grid gap-2" id="footSrcs"></ul>
+        </div>
+      </div>
+      <div class="mt-10 flex flex-col gap-2 border-t border-line pt-6 text-[13px] text-mute sm:flex-row sm:justify-between">
+        <p>Демонстрационный сайт: заголовки, тексты и названия источников вымышлены.</p>
+        <p>© 2026 Лента</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= МОДАЛЬНОЕ ОКНО ================= -->
+  <div id="modal" class="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6" role="dialog" aria-modal="true" aria-labelledby="mTitle" hidden>
+    <div class="modal-backdrop absolute inset-0 bg-ink/45" data-close></div>
+    <div id="modalPanel" class="modal-panel relative max-h-[92vh] w-full overflow-y-auto rounded-t-[1.75rem] bg-surface md:max-w-2xl md:rounded-[1.75rem]" style="padding-bottom:env(safe-area-inset-bottom,0px)"></div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- Утилиты ---------- */
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const plural = (n, f) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? f[2] : b > 1 && b < 5 ? f[1] : b === 1 ? f[0] : f[2]; };
+  const num = v => v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace('.', ',').replace(',0', '') + ' тыс.' : String(v);
+  const ago = m => m < 60 ? `${m} мин назад` : m < 1440 ? `${Math.floor(m / 60)} ч назад` : m < 2880 ? 'вчера' : `${Math.floor(m / 1440)} дн. назад`;
+
+  const ICON = {
+    heart: '<svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    eye:   '<svg class="ico" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    star:  '<svg class="ico" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    x:     '<svg class="ico" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    down:  '<svg class="ico" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>',
+    out:   '<svg class="ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'
+  };
+
+  /* ---------- Данные ---------- */
+  const CATS = {
+    tech: { n: 'Технологии', p: { bg: '#DCE4EE', a: '#6A83A0', b: '#33465E', c: '#BD6046' } },
+    eco:  { n: 'Экономика',  p: { bg: '#E2E9DE', a: '#60806C', b: '#2F4A3B', c: '#C99A4B' } },
+    sci:  { n: 'Наука',      p: { bg: '#E6E1EE', a: '#7B6C9C', b: '#3F3560', c: '#E0A458' } },
+    cul:  { n: 'Культура',   p: { bg: '#F3DFD6', a: '#BD6046', b: '#5E2F25', c: '#E9B872' } },
+    spo:  { n: 'Спорт',      p: { bg: '#F1E7C9', a: '#C58B2A', b: '#5A4413', c: '#60806C' } },
+    wor:  { n: 'Мир',        p: { bg: '#DCE8E6', a: '#4F8583', b: '#21403F', c: '#BD6046' } }
+  };
+  const SRC = {
+    sv: { n: 'Северный вестник', m: 'СВ', c: '#4F8583' },
+    tp: { n: 'Технопост',        m: 'ТП', c: '#58708D' },
+    rs: { n: 'Рынок сегодня',    m: 'РС', c: '#557563' },
+    nv: { n: 'Наука вслух',      m: 'НВ', c: '#7B6C9C' },
+    ks: { n: 'Культурный слой',  m: 'КС', c: '#BD6046' },
+    st: { n: 'Стадион',          m: 'СТ', c: '#B8811F' },
+    mo: { n: 'Мировой обзор',    m: 'МО', c: '#3F6F8F' },
+    ok: { n: 'Открытый код',     m: 'ОК', c: '#5A5F66' }
+  };
+  // c — категория, s — источник, t — заголовок, l — лид, g — теги, m — минут назад, v — просмотры, k — лайки, r — [рейтинг, число оценок]
+  const NEWS = [
+    { id: 1,  c: 'tech', s: 'tp', t: 'Производители умных домов договорились об общем протоколе обновлений', l: 'Семь компаний опубликовали черновик стандарта, по которому устройства будут получать обновления независимо от бренда хаба. Пользователи смогут сменить центр управления, не перенастраивая сценарии. Окончательную версию обещают к весне.', g: ['умный дом', 'стандарты'], m: 12, v: 1840, k: 96, r: [4.5, 42] },
+    { id: 2,  c: 'tech', s: 'ok', t: 'Три ошибки команд, которые переходят на локальные модели ИИ', l: 'Разработчики делятся опытом запуска моделей на собственных серверах. Чаще всего спотыкаются на недооценке памяти, отсутствии мониторинга качества и слишком раннем отказе от облачного резерва.', g: ['ИИ', 'разработка'], m: 35, v: 5210, k: 312, r: [4.7, 188] },
+    { id: 3,  c: 'tech', s: 'tp', t: 'Браузеры получат режим экономии трафика для слабых сетей', l: 'В новой версии движка страницы будут загружаться в облегчённом виде: без автозапуска видео и с отложенными скриптами. Для сайтов появится способ сообщить, какие элементы критичны.', g: ['браузеры', 'интернет'], m: 95, v: 2730, k: 141, r: [4.1, 67] },
+    { id: 4,  c: 'tech', s: 'nv', t: 'Аккумуляторы нового поколения выдержали тысячу циклов зарядки', l: 'Лабораторные образцы с твёрдым электролитом сохранили почти всю ёмкость после тысячи циклов. До серийного производства ещё далеко: исследователям предстоит удешевить материалы.', g: ['батареи', 'энергетика'], m: 700, v: 8930, k: 604, r: [4.8, 251] },
+
+    { id: 5,  c: 'eco',  s: 'rs', t: 'Цены в крупнейших экономиках растут медленнее, чем ожидали аналитики', l: 'Свежая статистика показала замедление потребительской инфляции второй месяц подряд. Эксперты расходятся в оценках: одни говорят об устойчивом тренде, другие — о временном эффекте от снижения цен на энергоносители.', g: ['инфляция', 'макроэкономика'], m: 58, v: 3120, k: 87, r: [4.0, 54] },
+    { id: 6,  c: 'eco',  s: 'rs', t: 'Малый бизнес всё чаще принимает оплату по QR-коду', l: 'Владельцы кафе и мастерских отмечают, что переход на QR снизил комиссии и ускорил расчёты. Сложнее всего оказалось приучить к новому способу старших покупателей.', g: ['платежи', 'малый бизнес'], m: 210, v: 1960, k: 74, r: [4.2, 39] },
+    { id: 7,  c: 'eco',  s: 'sv', t: 'Аренда жилья: спрос сместился в спальные районы', l: 'Риелторы фиксируют рост запросов на квартиры вдали от центра. Главная причина — удалённая работа и развитие транспорта, которое сократило время в пути.', g: ['недвижимость', 'города'], m: 1100, v: 4470, k: 205, r: [4.3, 96] },
+    { id: 8,  c: 'eco',  s: 'mo', t: 'Что будет с ценами на кофе: урожай оказался ниже прогноза', l: 'Аграрии в ключевых регионах сообщили о снижении сбора из-за нестабильной погоды. Обжарщики уже пересматривают закупки и предупреждают о возможном подорожании к зиме.', g: ['сырьё', 'продукты'], m: 2900, v: 2380, k: 63, r: [3.9, 31] },
+
+    { id: 9,  c: 'sci',  s: 'nv', t: 'Астрономы нашли необычно тусклую звезду в плотной пылевой оболочке', l: 'Объект оказался ярче в инфракрасном диапазоне, чем в видимом, поэтому его так долго не замечали. Наблюдения помогут уточнить модели формирования звёзд.', g: ['астрономия', 'космос'], m: 140, v: 6120, k: 428, r: [4.9, 173] },
+    { id: 10, c: 'sci',  s: 'sv', t: 'В Восточной Европе нашли мастерскую бронзового века с готовыми формами для литья', l: 'Археологи обнаружили набор каменных форм и следы плавильных печей. По предварительной оценке, мастерской пользовались несколько поколений.', g: ['археология', 'история'], m: 480, v: 3390, k: 176, r: [4.6, 88] },
+    { id: 11, c: 'sci',  s: 'nv', t: 'Короткий дневной сон улучшил запоминание у студентов', l: 'В небольшом эксперименте участники, отдохнувшие двадцать минут, лучше воспроизводили выученный материал. Авторы подчёркивают, что нужны более крупные выборки.', g: ['нейронауки', 'сон'], m: 1300, v: 5060, k: 389, r: [4.4, 120] },
+    { id: 12, c: 'sci',  s: 'mo', t: 'Океанологи составили карту течений, влияющих на миграцию тунца', l: 'Карта объединила данные спутников и меток на животных за десять лет. Она поможет рыболовным флотам планировать квоты и снижать нагрузку на популяции.', g: ['океан', 'экология'], m: 4300, v: 1710, k: 92, r: [4.3, 45] },
+
+    { id: 13, c: 'cul',  s: 'ks', t: 'В городской галерее открылась выставка о забытых ремёслах', l: 'Экспозиция показывает работу кружевниц, бондарей и мастеров расписной посуды. Часть залов занимают мастер-классы, где можно попробовать ремесло самому.', g: ['выставки', 'ремёсла'], m: 320, v: 1280, k: 134, r: [4.7, 58] },
+    { id: 14, c: 'cul',  s: 'ks', t: 'Издатели отмечают рост интереса к документальной прозе', l: 'Продажи нон-фикшена за год выросли, особенно в жанре личных историй и научно-популярных эссе. Книжные магазины расширяют полки и проводят встречи с авторами.', g: ['книги', 'литература'], m: 900, v: 980, k: 61, r: [4.0, 27] },
+    { id: 15, c: 'cul',  s: 'sv', t: 'Фестиваль короткометражек впервые добавил секцию студенческих работ', l: 'В программу вошли сорок фильмов из пятнадцати стран. Жюри обещает уделить студенческой секции отдельное время и вручить собственный приз.', g: ['кино', 'фестивали'], m: 2100, v: 1540, k: 108, r: [4.5, 36] },
+
+    { id: 16, c: 'spo',  s: 'st', t: 'Молодая команда неожиданно возглавила таблицу после десятого тура', l: 'Клуб, который весной чудом избежал вылета, выиграл шесть матчей подряд. Тренер объясняет успех дисциплиной в обороне и удачной работой с молодёжью.', g: ['футбол', 'чемпионат'], m: 75, v: 7420, k: 516, r: [4.6, 210] },
+    { id: 17, c: 'spo',  s: 'st', t: 'Городской марафон собрал рекордное число участников', l: 'На старт вышли более двадцати тысяч бегунов, а организаторы добавили новые маршруты через набережные. Волонтёры отметили, что впервые не хватило воды на дальних отметках.', g: ['бег', 'города'], m: 1700, v: 3260, k: 247, r: [4.4, 79] },
+    { id: 18, c: 'spo',  s: 'st', t: 'Тренеры о новой системе подготовки: меньше объёма, больше восстановления', l: 'Команды перестраивают циклы нагрузок, отдавая приоритет сну и питанию. Первые результаты — меньше травм и стабильная форма к концу сезона.', g: ['тренировки', 'сон'], m: 3400, v: 2050, k: 118, r: [4.2, 44] },
+
+    { id: 19, c: 'wor',  s: 'mo', t: 'Города Северной Европы тестируют единый проездной для поездов и автобусов', l: 'Пилотный проект охватил шесть городов и два железнодорожных оператора. Пассажиры покупают билет в одном приложении и платят по факту поездок с дневным потолком.', g: ['транспорт', 'города'], m: 24, v: 2610, k: 173, r: [4.5, 61] },
+    { id: 20, c: 'wor',  s: 'sv', t: 'Климатическая встреча завершилась договорённостью о фонде адаптации', l: 'Участники согласовали механизм финансирования проектов для прибрежных регионов. Критики указывают, что размер фонда пока не определён.', g: ['климат', 'экология'], m: 5000, v: 4890, k: 221, r: [3.8, 142] },
+    { id: 21, c: 'wor',  s: 'mo', t: 'Учёные и рыбаки вместе восстанавливают заросли морской травы', l: 'Волонтёры высаживают побеги вдоль побережья, а рыбаки помогают отслеживать состояние дна. Заросли защищают берег от эрозии и служат укрытием для молоди рыб.', g: ['экология', 'океан'], m: 6200, v: 1420, k: 152, r: [4.8, 52] },
+    { id: 22, c: 'wor',  s: 'sv', t: 'Путешествие поездом по Европе осенью: маршруты для неспешной поездки', l: 'Редакция собрала пять маршрутов с пересадками не чаще двух раз. Осенью меньше туристов и дешевле билеты, а вдоль путей — самые красивые виды.', g: ['путешествия', 'транспорт'], m: 7300, v: 3730, k: 288, r: [4.7, 101] }
+  ];
+  const BY_ID = Object.fromEntries(NEWS.map(n => [n.id, n]));
+  NEWS.forEach(n => { n._h = [n.t, n.l, SRC[n.s].n, CATS[n.c].n, ...n.g].join(' ').toLowerCase(); });
+
+  /* ---------- Обложки: у каждой категории свой мотив ---------- */
+  function rng(seed) {
+    let a = seed >>> 0;
+    return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  }
+  const MOTIF = {
+    tech(r, p) {
+      let s = '';
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 13; x++) {
+        const on = r() > .62;
+        s += `<circle cx="${18 + x * 31}" cy="${16 + y * 30}" r="${on ? 5 : 2.2}" fill="${on ? p.a : p.b}" opacity="${on ? .95 : .3}"/>`;
+      }
+      s += `<rect x="${(70 + r() * 110) | 0}" y="${(44 + r() * 30) | 0}" width="170" height="100" rx="20" fill="${p.b}"/>`;
+      s += `<rect x="${(150 + r() * 80) | 0}" y="${(100 + r() * 40) | 0}" width="120" height="70" rx="16" fill="${p.c}"/>`;
+      return s;
+    },
+    eco(r, p) {
+      let s = '', h = 50;
+      for (let i = 0; i < 9; i++) {
+        h = Math.min(190, Math.max(40, h + 8 + r() * 22 - (r() > .7 ? 30 : 0)));
+        s += `<rect x="${24 + i * 40}" y="${(222 - h) | 0}" width="28" height="${h | 0}" rx="6" fill="${i === 8 ? p.c : (i % 2 ? p.a : p.b)}"/>`;
+      }
+      s += `<path d="M10 ${(150 + r() * 30) | 0} C 120 ${(90 + r() * 50) | 0}, 240 ${(130 + r() * 40) | 0}, 392 ${(30 + r() * 30) | 0}" fill="none" stroke="${p.b}" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"/>`;
+      return s;
+    },
+    sci(r, p) {
+      const cx = (150 + r() * 100) | 0, cy = (100 + r() * 40) | 0;
+      let s = `<circle cx="${cx}" cy="${cy}" r="${(34 + r() * 14) | 0}" fill="${p.a}"/>`;
+      for (let i = 1; i <= 4; i++) s += `<circle cx="${cx}" cy="${cy}" r="${40 + i * 34}" fill="none" stroke="${p.b}" stroke-opacity="${(.6 - i * .11).toFixed(2)}" stroke-width="1.5"/>`;
+      const a1 = r() * 6.28, a2 = a1 + 2.4;
+      s += `<circle cx="${(cx + Math.cos(a1) * 142) | 0}" cy="${(cy + Math.sin(a1) * 142) | 0}" r="9" fill="${p.c}"/>`;
+      s += `<circle cx="${(cx + Math.cos(a2) * 74) | 0}" cy="${(cy + Math.sin(a2) * 74) | 0}" r="6" fill="${p.b}"/>`;
+      return s;
+    },
+    cul(r, p) {
+      const cols = [p.b, p.a, p.c, p.b];
+      let s = '';
+      for (let i = 0; i < 4; i++) {
+        const x = 20 + i * 92, w = 84, top = (30 + r() * 70) | 0;
+        s += `<path d="M${x} 240 V${top + w / 2} a${w / 2} ${w / 2} 0 0 1 ${w} 0 V240 Z" fill="${cols[i]}" opacity="${i === 3 ? .55 : 1}"/>`;
+      }
+      s += `<circle cx="${(60 + r() * 280) | 0}" cy="${(34 + r() * 20) | 0}" r="14" fill="${p.c}"/>`;
+      return s;
+    },
+    spo(r, p) {
+      let s = '';
+      for (let i = 0; i < 7; i++) s += `<rect x="${-100 + i * 70}" y="-60" width="34" height="380" fill="${i % 2 ? p.a : p.b}" opacity="${i % 2 ? .85 : .92}" transform="rotate(28 200 120)"/>`;
+      s += `<circle cx="${(230 + r() * 100) | 0}" cy="${(70 + r() * 90) | 0}" r="${(34 + r() * 16) | 0}" fill="${p.c}"/>`;
+      return s;
+    },
+    wor(r, p) {
+      const cx = (200 + r() * 60) | 0, cy = 120, R = 96;
+      let s = `<rect x="24" y="150" width="90" height="66" rx="14" fill="${p.b}"/><circle cx="${cx}" cy="${cy}" r="${R}" fill="${p.a}"/>`;
+      for (const k of [.25, .55, .85]) s += `<ellipse cx="${cx}" cy="${cy}" rx="${(R * k) | 0}" ry="${R}" fill="none" stroke="${p.bg}" stroke-opacity=".75" stroke-width="2"/>`;
+      for (const d of [-48, 0, 48]) { const hw = Math.sqrt(R * R - d * d) | 0; s += `<line x1="${cx - hw}" x2="${cx + hw}" y1="${cy + d}" y2="${cy + d}" stroke="${p.bg}" stroke-opacity=".6" stroke-width="2"/>`; }
+      s += `<circle cx="${cx + 40}" cy="${cy - 30}" r="9" fill="${p.c}"/>`;
+      return s;
+    }
+  };
+  const coverCache = {};
+  function cover(n) {
+    return coverCache[n.id] || (coverCache[n.id] = (() => {
+      const p = CATS[n.c].p;
+      return `<svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="400" height="240" fill="${p.bg}"/>${MOTIF[n.c](rng(n.id * 7919 + 13), p)}</svg>`;
+    })());
+  }
+
+  /* ---------- Состояние ---------- */
+  const KEY = 'lenta-demo-v1';
+  const user = (() => {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY) || '{}');
+      return { likes: new Set(d.likes || []), rate: d.rate || {}, views: d.views || {}, view: d.view === 'list' ? 'list' : 'grid' };
+    } catch (e) { return { likes: new Set(), rate: {}, views: {}, view: 'grid' }; }
+  })();
+  const save = () => {
+    try { localStorage.setItem(KEY, JSON.stringify({ likes: [...user.likes], rate: user.rate, views: user.views, view: state.view })); } catch (e) { /* хранилище недоступно */ }
+  };
+
+  const PAGE = 9;
+  const state = { q: '', cat: 'all', tag: null, src: null, likedOnly: false, sort: 'new', view: user.view, shown: PAGE };
+  const opened = new Set();
+  let re = null, currentId = null, lastFocus = null;
+
+  const likesOf = n => n.k + (user.likes.has(n.id) ? 1 : 0);
+  const viewsOf = n => n.v + (user.views[n.id] || 0);
+  const ratingOf = n => {
+    const u = user.rate[n.id] || 0, cnt = n.r[1] + (u ? 1 : 0);
+    return { avg: (n.r[0] * n.r[1] + u) / cnt, cnt };
+  };
+  const fmtR = v => v.toFixed(1).replace('.', ',');
+
+  /* ---------- Выборка ---------- */
+  function getList() {
+    const q = state.q.trim().toLowerCase();
+    const list = NEWS.filter(n =>
+      (state.cat === 'all' || n.c === state.cat) &&
+      (!state.tag || n.g.includes(state.tag)) &&
+      (!state.src || n.s === state.src) &&
+      (!state.likedOnly || user.likes.has(n.id)) &&
+      (!q || n._h.includes(q)));
+    const by = {
+      new:    (a, b) => a.m - b.m,
+      views:  (a, b) => viewsOf(b) - viewsOf(a),
+      rating: (a, b) => ratingOf(b).avg - ratingOf(a).avg || ratingOf(b).cnt - ratingOf(a).cnt,
+      likes:  (a, b) => likesOf(b) - likesOf(a)
+    }[state.sort];
+    return list.sort(by);
+  }
+  const hl = text => re ? text.split(re).map((p, i) => i % 2 ? `<mark>${esc(p)}</mark>` : esc(p)).join('') : esc(text);
+
+  /* ---------- Шаблоны ---------- */
+  const monoHTML = s => `<span class="mono" style="background:${SRC[s].c}" aria-hidden="true">${SRC[s].m}</span>`;
+  const tagsHTML = (n, cls = '') => n.g.map(t => `<button class="chip sm ${cls}" data-tag="${esc(t)}" aria-label="Тег ${esc(t)}">#${esc(t)}</button>`).join('');
+
+  function actionsHTML(n) {
+    const liked = user.likes.has(n.id), r = ratingOf(n);
+    return `<div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+      <button class="act like" data-like="${n.id}" aria-pressed="${liked}" aria-label="Нравится">${ICON.heart}<span class="cnt">${num(likesOf(n))}</span></button>
+      <span class="act" title="Просмотры">${ICON.eye}<span data-views="${n.id}">${num(viewsOf(n))}</span></span>
+      <button class="act rate ml-auto" data-open="${n.id}" title="Рейтинг: ${r.cnt} ${plural(r.cnt, ['оценка', 'оценки', 'оценок'])}" aria-label="Рейтинг ${fmtR(r.avg)}, открыть материал">${ICON.star}<span class="font-semibold text-ink">${fmtR(r.avg)}</span><span class="opacity-70">(${r.cnt})</span></button>
+    </div>`;
+  }
+  const metaHTML = n => `<div class="flex items-center justify-between gap-3 text-[13px] text-mute">
+      <span class="flex min-w-0 items-center gap-2">${monoHTML(n.s)}<span class="truncate font-medium text-ink/80">${SRC[n.s].n}</span></span>
+      <span class="shrink-0">${ago(n.m)}</span></div>`;
+  const pillHTML = n => `<span class="cat-pill"><i class="dot" style="background:${CATS[n.c].p.a}"></i>${CATS[n.c].n}</span>`;
+
+  function cardHTML(n) {
+    return `<article class="card" data-id="${n.id}">
+      <div class="cover" data-open="${n.id}">${cover(n)}${pillHTML(n)}</div>
+      <div class="flex grow flex-col gap-3 px-3.5 pb-3 pt-4">
+        ${metaHTML(n)}
+        <h3 class="text-[1.0625rem] font-semibold leading-snug tracking-[-0.012em]"><button class="title-btn" data-open="${n.id}">${hl(n.t)}</button></h3>
+        <p class="line-clamp-3 text-[15px] leading-relaxed text-mute">${hl(n.l)}</p>
+        <div class="-ml-1 flex flex-wrap gap-1">${tagsHTML(n)}</div>
+        <div class="mt-auto border-t border-line pt-3">${actionsHTML(n)}</div>
+      </div>
+    </article>`;
+  }
+  function featureHTML(n) {
+    return `<article class="card card-feature col-span-full" data-id="${n.id}">
+      <div class="cover" data-open="${n.id}">${cover(n)}${pillHTML(n)}</div>
+      <div class="flex grow flex-col gap-4 p-4 md:p-6">
+        ${metaHTML(n)}
+        <h2 class="text-2xl font-bold leading-[1.15] tracking-[-0.025em] md:text-[1.75rem]"><button class="title-btn" data-open="${n.id}">${hl(n.t)}</button></h2>
+        <p class="text-base leading-relaxed text-mute">${hl(n.l)}</p>
+        <div class="-ml-1 flex flex-wrap gap-1">${tagsHTML(n)}</div>
+        <div class="mt-auto border-t border-line pt-3">${actionsHTML(n)}</div>
+      </div>
+    </article>`;
+  }
+  function rowHTML(n) {
+    return `<article class="rowitem" data-id="${n.id}">
+      <div class="cover" data-open="${n.id}">${cover(n)}</div>
+      <div class="flex min-w-0 grow flex-col gap-2">
+        ${metaHTML(n)}
+        <h3 class="text-base font-semibold leading-snug tracking-[-0.01em] sm:text-[1.0625rem]"><button class="title-btn" data-open="${n.id}">${hl(n.t)}</button></h3>
+        <p class="hidden line-clamp-2 text-[15px] leading-relaxed text-mute sm:block">${hl(n.l)}</p>
+        <div class="-ml-1 hidden flex-wrap gap-1 md:flex">${tagsHTML(n)}</div>
+        <div class="mt-auto pt-1">${actionsHTML(n)}</div>
+      </div>
+    </article>`;
+  }
+  function emptyHTML() {
+    const msg = state.likedOnly && !user.likes.size
+      ? 'Вы ещё ничего не отметили. Нажмите на сердечко у материала, и он появится здесь.'
+      : 'По этим условиям материалов нет. Измените запрос или сбросьте фильтры.';
+    return `<div class="rounded-[1.35rem] border border-dashed border-line bg-surface/60 px-6 py-14 text-center">
+      <p class="text-lg font-semibold tracking-tight">Ничего не найдено</p>
+      <p class="mx-auto mt-2 max-w-sm text-[15px] leading-relaxed text-mute">${msg}</p>
+      <button class="btn-quiet mt-6" data-clear="all">Сбросить фильтры</button></div>`;
+  }
+
+  /* ---------- Рендер ---------- */
+  function renderNav() {
+    const catCount = k => NEWS.filter(n => n.c === k).length;
+    const srcCount = k => NEWS.filter(n => n.s === k).length;
+
+    const cats = `<button class="navrow" data-cat="all" aria-current="${state.cat === 'all'}"><span>Все новости</span><span class="cnt">${NEWS.length}</span></button>` +
+      Object.entries(CATS).map(([k, c]) => `<button class="navrow" data-cat="${k}" aria-current="${state.cat === k}"><span class="flex items-center gap-2.5"><i class="dot" style="background:${c.p.a}"></i>${c.n}</span><span class="cnt">${catCount(k)}</span></button>`).join('');
+    const srcs = Object.entries(SRC).map(([k, s]) => `<button class="navrow" data-src="${k}" aria-current="${state.src === k}"><span class="flex items-center gap-2.5">${monoHTML(k)}${s.n}</span><span class="cnt">${srcCount(k)}</span></button>`).join('');
+
+    const freq = {};
+    NEWS.forEach(n => n.g.forEach(t => freq[t] = (freq[t] || 0) + 1));
+    const top = Object.entries(freq).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru')).slice(0, 16).map(e => e[0]);
+    const tags = top.map(t => `<button class="chip" data-tag="${esc(t)}" aria-pressed="${state.tag === t}">#${esc(t)}</button>`).join('');
+    const catsM = `<button class="chip" data-cat="all" aria-pressed="${state.cat === 'all'}">Все</button>` +
+      Object.entries(CATS).map(([k, c]) => `<button class="chip" data-cat="${k}" aria-pressed="${state.cat === k}">${c.n}</button>`).join('');
+
+    $$('[data-slot="cats"]').forEach(el => el.innerHTML = cats);
+    $$('[data-slot="srcs"]').forEach(el => el.innerHTML = srcs);
+    $$('[data-slot="tags"], [data-slot="tags-m"]').forEach(el => el.innerHTML = tags);
+    $$('[data-slot="cats-m"]').forEach(el => el.innerHTML = catsM);
+  }
+
+  function renderApplied() {
+    const items = [];
+    if (state.q.trim()) items.push(['q', `Запрос: ${esc(state.q.trim())}`]);
+    if (state.cat !== 'all') items.push(['cat', CATS[state.cat].n]);
+    if (state.src) items.push(['src', SRC[state.src].n]);
+    if (state.tag) items.push(['tag', '#' + esc(state.tag)]);
+    if (state.likedOnly) items.push(['liked', 'Понравившиеся']);
+    const box = $('#applied');
+    box.hidden = !items.length;
+    box.innerHTML = items.length
+      ? items.map(([k, label]) => `<button class="chip applied" data-clear="${k}" aria-label="Убрать фильтр: ${label}">${label}${ICON.x}</button>`).join('') +
+        (items.length > 1 ? '<button class="chip sm" data-clear="all" style="border-color:transparent">Сбросить всё</button>' : '')
+      : '';
+  }
+
+  function render({ animate = true } = {}) {
+    const q = state.q.trim();
+    re = q ? new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi') : null;
+
+    const list = getList();
+    const slice = list.slice(0, state.shown);
+    const canFeature = state.view === 'grid' && !q && state.cat === 'all' && !state.tag && !state.src && !state.likedOnly && state.sort === 'new';
+
+    let html;
+    if (!list.length) html = emptyHTML();
+    else if (state.view === 'grid') html = '<div class="grid gap-4 md:grid-cols-2 min-[1180px]:grid-cols-3">' +
+      slice.map((n, i) => canFeature && i === 0 ? featureHTML(n) : cardHTML(n)).join('') + '</div>';
+    else html = '<div class="rowlist">' + slice.map(rowHTML).join('') + '</div>';
+
+    const feed = $('#feed');
+    feed.innerHTML = html;
+    if (animate) { feed.classList.remove('feed-in'); void feed.offsetWidth; feed.classList.add('feed-in'); }
+
+    const rest = list.length - slice.length;
+    const more = $('#more');
+    more.hidden = rest <= 0;
+    more.innerHTML = rest > 0 ? `<button class="btn-primary" data-more>Показать ещё ${Math.min(PAGE, rest)} ${ICON.down}</button>` : '';
+
+    $('#count').textContent = `${list.length} ${plural(list.length, ['материал', 'материала', 'материалов'])}` + (rest > 0 ? `, показано ${slice.length}` : '');
+
+    $$('[data-sort]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sort === state.sort)));
+    $$('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+
+    const lk = $('[data-toggle-liked]');
+    lk.setAttribute('aria-pressed', String(state.likedOnly));
+    const badge = $('#likedBadge');
+    badge.hidden = !user.likes.size;
+    badge.textContent = user.likes.size;
+
+    renderApplied();
+  }
+
+  function setFilter(patch) {
+    Object.assign(state, patch, { shown: PAGE });
+    render(); renderNav();
+  }
+
+  /* ---------- Лайки, просмотры, оценки ---------- */
+  function toggleLike(id) {
+    user.likes.has(id) ? user.likes.delete(id) : user.likes.add(id);
+    save();
+    const n = BY_ID[id], on = user.likes.has(id);
+    $$(`[data-like="${id}"]`).forEach(b => {
+      b.setAttribute('aria-pressed', String(on));
+      const c = $('.cnt', b); if (c) c.textContent = num(likesOf(n));
+      b.classList.remove('pop'); void b.offsetWidth; if (on) b.classList.add('pop');
+    });
+    const badge = $('#likedBadge');
+    badge.hidden = !user.likes.size; badge.textContent = user.likes.size;
+    // если открыто окно, лента обновится при его закрытии
+    if (state.likedOnly && $('#modal').hidden) render({ animate: false });
+  }
+
+  function rate(id, v) {
+    if (user.rate[id] === v) delete user.rate[id]; else user.rate[id] = v;
+    save();
+    toast(user.rate[id] ? `Оценка ${v} из 5 сохранена` : 'Оценка снята');
+    openModal(id, null, true);
+    render({ animate: false });
+  }
+
+  /* ---------- Модальное окно ---------- */
+  function modalHTML(n) {
+    const c = CATS[n.c], s = SRC[n.s], r = ratingOf(n), my = user.rate[n.id] || 0;
+    const rel = NEWS.filter(x => x.id !== n.id)
+      .map(x => ({ x, sc: x.g.filter(t => n.g.includes(t)).length * 2 + (x.c === n.c ? 1 : 0) }))
+      .filter(o => o.sc > 0).sort((a, b) => b.sc - a.sc).slice(0, 3).map(o => o.x);
+    return `
+      <div class="relative">
+        <div class="aspect-[16/7] w-full overflow-hidden bg-sunk">${cover(n).replace('<svg ', '<svg style="width:100%;height:100%;display:block" ')}</div>
+        <button class="ibtn absolute right-3 top-3 bg-surface shadow" data-close aria-label="Закрыть">${ICON.x}</button>
+      </div>
+      <div class="p-5 md:p-8">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[13px] text-mute">
+          <span class="flex items-center gap-2">${monoHTML(n.s)}<span class="font-medium text-ink/80">${s.n}</span></span>
+          <span class="flex items-center gap-2"><i class="dot" style="background:${c.p.a}"></i>${c.n}, ${ago(n.m)}</span>
+        </div>
+        <h2 id="mTitle" class="mt-4 text-2xl font-bold leading-[1.15] tracking-[-0.025em] md:text-[1.9rem]">${esc(n.t)}</h2>
+        <p class="mt-4 max-w-[62ch] text-base leading-[1.7] text-ink/85">${esc(n.l)}</p>
+        <div class="-ml-1 mt-4 flex flex-wrap gap-1">${tagsHTML(n)}</div>
+
+        <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-line py-4">
+          <button class="act like" style="font-size:.9375rem" data-like="${n.id}" aria-pressed="${user.likes.has(n.id)}" aria-label="Нравится">${ICON.heart}<span class="cnt">${num(likesOf(n))}</span></button>
+          <span class="act" style="font-size:.9375rem">${ICON.eye}<span data-views="${n.id}">${num(viewsOf(n))}</span></span>
+          <span class="act rate ml-auto" style="font-size:.9375rem">${ICON.star}<span class="font-semibold text-ink">${fmtR(r.avg)}</span><span class="opacity-70">${r.cnt} ${plural(r.cnt, ['оценка', 'оценки', 'оценок'])}</span></span>
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="text-sm font-semibold">${my ? `Ваша оценка: ${my} из 5` : 'Оцените материал'}</p>
+            <div id="stars" class="-ml-1 mt-1 flex" role="group" aria-label="Ваша оценка">
+              ${[1, 2, 3, 4, 5].map(i => `<button class="star ${i <= my ? 'on' : ''}" data-star="${i}" aria-label="Оценить на ${i} из 5" aria-pressed="${i === my}">${ICON.star}</button>`).join('')}
+            </div>
+          </div>
+          <button class="btn-primary" data-demo>Открыть у источника ${ICON.out}</button>
+        </div>
+
+        ${rel.length ? `<div class="mt-8">
+          <h3 class="mb-2 text-sm font-semibold">Читайте также</h3>
+          <div class="-mx-2">${rel.map(x => `<button class="related" data-open="${x.id}">${monoHTML(x.s)}<span class="min-w-0 grow text-[15px] font-medium leading-snug">${esc(x.t)}</span><span class="shrink-0 text-xs text-mute">${ago(x.m)}</span></button>`).join('')}</div>
+        </div>` : ''}
+      </div>`;
+  }
+
+  function openModal(id, opener, silent) {
+    const n = BY_ID[id]; if (!n) return;
+    const modal = $('#modal'), panel = $('#modalPanel');
+    const wasOpen = !modal.hidden;
+    if (!wasOpen) lastFocus = opener || document.activeElement;
+    if (!opened.has(id)) {
+      opened.add(id);
+      user.views[id] = (user.views[id] || 0) + 1;
+      save();
+      $$(`[data-views="${id}"]`).forEach(el => el.textContent = num(viewsOf(n)));
+    }
+    currentId = id;
+    const keep = panel.scrollTop;
+    panel.innerHTML = modalHTML(n);
+    panel.scrollTop = silent ? keep : 0;
+    modal.hidden = false;
+    document.documentElement.style.overflow = 'hidden';
+    if (!silent || !wasOpen) $('[data-close]', panel).focus({ preventScroll: true });
+  }
+  function closeModal() {
+    const modal = $('#modal'); if (modal.hidden) return;
+    modal.hidden = true;
+    document.documentElement.style.overflow = '';
+    currentId = null;
+    if (state.likedOnly) render({ animate: false });
+    if (lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+  }
+  function paintStars(v) { $$('#stars .star').forEach((b, i) => b.classList.toggle('on', i < v)); }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  /* ---------- События ---------- */
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-like],[data-open],[data-tag],[data-cat],[data-src],[data-clear],[data-sort],[data-view],[data-more],[data-toggle-liked],[data-close],[data-star],[data-top],[data-demo]');
+    if (!t) return;
+    const d = t.dataset, inModal = !!t.closest('#modal'), inFooter = !!t.closest('footer');
+
+    if ('like' in d) return toggleLike(+d.like);
+    if ('open' in d) return openModal(+d.open, t, inModal);
+    if ('star' in d) return rate(currentId, +d.star);
+    if ('close' in d) return closeModal();
+    if ('demo' in d) return toast('Это демо: ссылка на источник не настроена');
+    if ('top' in d) return window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (inModal) closeModal();
+    if ('tag' in d) setFilter({ tag: inModal || state.tag !== d.tag ? d.tag : null });
+    else if ('cat' in d) setFilter({ cat: d.cat });
+    else if ('src' in d) setFilter({ src: state.src === d.src ? null : d.src });
+    else if ('sort' in d) { state.sort = d.sort; state.shown = PAGE; render(); }
+    else if ('view' in d) { state.view = d.view; save(); render(); }
+    else if ('more' in d) { state.shown += PAGE; render({ animate: false }); }
+    else if ('toggleLiked' in d) setFilter({ likedOnly: !state.likedOnly });
+    else if ('clear' in d) {
+      const k = d.clear;
+      if (k === 'q' || k === 'all') { input.value = ''; state.q = ''; syncSearchUI(); }
+      if (k === 'all') setFilter({ cat: 'all', tag: null, src: null, likedOnly: false });
+      else if (k === 'q') setFilter({});
+      else if (k === 'cat') setFilter({ cat: 'all' });
+      else if (k === 'tag') setFilter({ tag: null });
+      else if (k === 'src') setFilter({ src: null });
+      else if (k === 'liked') setFilter({ likedOnly: false });
+      if (k === 'q') input.focus();
+    }
+    if (inFooter && ('cat' in d || 'src' in d)) window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Предпросмотр звёзд при наведении
+  const panel = $('#modalPanel');
+  panel.addEventListener('mouseover', e => { const s = e.target.closest('[data-star]'); if (s) paintStars(+s.dataset.star); });
+  panel.addEventListener('mouseout', e => {
+    if (e.target.closest('#stars') && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('#stars'))) paintStars(user.rate[currentId] || 0);
+  });
+
+  // Поиск
+  const input = $('#q');
+  function syncSearchUI() {
+    const has = input.value.length > 0;
+    $('#qClear').hidden = !has;
+    $('#qKbd').style.display = has ? 'none' : '';
+  }
+  let debounce;
+  input.addEventListener('input', () => {
+    syncSearchUI();
+    clearTimeout(debounce);
+    debounce = setTimeout(() => { state.q = input.value; state.shown = PAGE; render(); }, 110);
+  });
+
+  // Клавиатура
+  document.addEventListener('keydown', e => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (e.key === '/' && !typing && $('#modal').hidden) { e.preventDefault(); input.focus(); input.select(); }
+    else if (e.key === 'Escape') {
+      if (!$('#modal').hidden) closeModal();
+      else if (document.activeElement === input && input.value) { input.value = ''; state.q = ''; syncSearchUI(); setFilter({}); }
+    } else if (e.key === 'Tab' && !$('#modal').hidden) {
+      const f = $$('button, [href], input, [tabindex]:not([tabindex="-1"])', $('#modalPanel')).filter(el => !el.disabled && el.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  /* ---------- Старт ---------- */
+  $('#updated').textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  $('#footCats').innerHTML = Object.entries(CATS).map(([k, c]) => `<li><button class="flink" data-cat="${k}">${c.n}</button></li>`).join('');
+  $('#footSrcs').innerHTML = Object.entries(SRC).map(([k, s]) => `<li><button class="flink" data-src="${k}">${s.n}</button></li>`).join('');
+  syncSearchUI();
+  renderNav();
+  render({ animate: false });
+})();
+</script>
+</body>
+</html>

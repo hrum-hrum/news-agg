@@ -1,0 +1,55 @@
+:root {
+  --paper: 243 241 236;
+  --surface: 251 250 247;
+  --sunk: 234 231 224;
+  --ink: 42 41 38;
+  --mute: 106 102 94;
+  --line: 226 221 211;
+  --clay: 189 96 70;
+  --clay-soft: 245 228 220;
+  --clay-ink: 140 62 42;
+  --on-clay: 255 255 255;
+  --sage: 96 128 108;
+  --sky: 106 131 160;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: 27 26 24;
+    --surface: 36 35 32;
+    --sunk: 47 45 41;
+    --ink: 236 233 226;
+    --mute: 165 160 150;
+    --line: 63 61 56;
+    --clay: 224 132 106;
+    --clay-soft: 68 46 39;
+    --clay-ink: 240 172 150;
+    --on-clay: 32 27 23;
+    --sage: 140 175 152;
+    --sky: 150 173 200;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --paper: 27 26 24;
+  --surface: 36 35 32;
+
+  --sunk: 47 45 41;
+  --ink: 236 233 226;
+  --mute: 165 160 150;
+  --line: 63 61 56;
+  --clay: 224 132 106;
+  --clay-soft: 68 46 39;
+  --clay-ink: 240 172 150;
+  --on-clay: 32 27 23;
+  --sage: 140 175 152;
+  --sky: 150 173 200;
+  color-scheme: dark;
+}
+
+/* ---------- База ---------- */
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

@@ -1,0 +1,7 @@
+fastapi[all]
+httpx
+aiosqlite
+beautifulsoup4
+openai
+feedparser-rs
+python-dotenv

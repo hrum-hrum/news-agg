@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новостной портал</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --text-color: #333;
+            --border-radius: 24px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .search-container {
+            position: relative;
+            width: 40%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .search-button {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 7px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .search-button:hover {
+            background: var(--secondary-color);
+        }
+
+        .filters {
+            margin-bottom: 2rem;
+        }
+
+        .filter-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.8rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+
+        .pills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pill {
+            padding: 8px 16px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow);
+        }
+
+        .pill:hover {
+            background-color: var(--light-color);
+        }
+
+        .pill.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 3rem;
+        }
+
+        .news-card {
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .news-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .news-content {
+            padding: 1.5rem;
+        }
+
+        .news-category {
+            display: inline-block;
+            background-color: var(--light-color);
+            color: var(--secondary-color);
+            padding: 4px 12px;
+            border-radius: var(--border-radius);
+            font-size: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .news-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.8rem;
+            color: var(--secondary-color);
+        }
+
+        .news-excerpt {
+            color: #666;
+            margin-bottom: 1.2rem;
+            font-size: 0.95rem;
+        }
+
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .news-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 0.8rem;
+        }
+
+        .tag {
+            background-color: var(--light-color);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .load-more {
+            display: block;
+            margin: 0 auto 3rem;
+            padding: 12px 30px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .load-more:hover {
+            background-color: var(--secondary-color);
+        }
+
+        footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            
+            .search-container {
+                width: 100%;
+            }
+            
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">TechNews</div>
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="Поиск новостей...">
+                    <button class="search-button">Найти</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="filters">
+            <div class="filter-section">
+                <h3 class="filter-title">Категории</h3>
+                <div class="pills-container">
+                    <div class="pill active">Все</div>
+                    <div class="pill">Технологии</div>
+                    <div class="pill">Бизнес</div>
+                    <div class="pill">Наука</div>
+                    <div class="pill">Искусственный интеллект</div>
+                    <div class="pill">Кибербезопасность</div>
+                    <div class="pill">Разработка</div>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h3 class="filter-title">Технологии</h3>
+                <div class="pills-container">
+                    <div class="pill active">Все</div>
+                    <div class="pill">JavaScript</div>
+                    <div class="pill">Python</div>
+                    <div class="pill">React</div>
+                    <div class="pill">Node.js</div>
+                    <div class="pill">AI/ML</div>
+                    <div class="pill">Blockchain</div>
+                    <div class="pill">Cloud</div>
+                    <div class="pill">IoT</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="news-grid">
+            <!-- Новость 1 -->
+            <article class="news-card">
+                <img src="https://via.placeholder.com/350x200" alt="Новость" class="news-image">
+                <div class="news-content">
+                    <span class="news-category">Технологии</span>
+                    <h3 class="news-title">Новый фреймворк React упрощает разработку интерфейсов</h3>
+                    <p class="news-excerpt">Компания Meta представила новую версию React с улучшенной производительностью и новыми возможностями для разработчиков.</p>
+                    <div class="news-meta">
+                        <span>2 часа назад</span>
+                        <span>Иван Петров</span>
+                    </div>
+                    <div class="news-tags">
+                        <span class="tag">React</span>
+                        <span class="tag">JavaScript</span>
+                        <span class="tag">Frontend</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Новость 2 -->
+            <article class="news-card">
+                <img src="https://via.placeholder.com/350x200" alt="Новость" class="news-image">
+                <div class="news-content">
+                    <span class="news-category">Искусственный интеллект</span>
+                    <h3 class="news-title">Новая модель GPT-4 превосходит предыдущие версии в творческих задачах</h3>
+                    <p class="news-excerpt">Исследователи OpenAI представили новую языковую модель, которая демонстрирует улучшенные возможности в генерации текста и решении сложных задач.</p>
+                    <div class="news-meta">
+                        <span>5 часов назад</span>
+                        <span>Анна Сидорова</span>
+                    </div>
+                    <div class="news-tags">
+                        <span class="tag">AI/ML</span>
+                        <span class="tag">GPT-4</span>
+                        <span class="tag">OpenAI</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Новость 3 -->
+            <article class="news-card">
+                <img src="https://via.placeholder.com/350x200" alt="Новость" class="news-image">
+                <div class="news-content">
+                    <span class="news-category">Кибербезопасность</span>
+                    <h3 class="news-title">Обнаружена уязвимость в популярных IoT устройствах</h3>
+                    <p class="news-excerpt">Исследователи безопасности обнаружили критическую уязвимость в миллионах IoT устройств, которая позволяет хакерам получить полный контроль.</p>
+                    <div class="news-meta">
+                        <span>Вчера</span>
+                        <span>Сергей Иванов</span>
+                    </div>
+                    <div class="news-tags">
+                        <span class="tag">Кибербезопасность</span>
+                        <span class="tag">IoT</span>
+                        <span class="tag">Уязвимости</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Новость 4 -->
+            <article class="news-card">
+                <img src="https://via.placeholder.com/350x200" alt="Новость" class="news-image">
+                <div class="news-content">
+                    <span class="news-category">Разработка</span>
+                    <h3 class="news-title">Python остается самым популярным языком программирования в 2023 году</h3>
+                    <p class="news-excerpt">Согласно рейтингу TIOBE, Python сохраняет лидирующую позицию среди языков программирования уже третий год подряд.</p>
+                    <div class="news-meta">
+                        <span>2 дня назад</span>
+                        <span>Мария Козлова</span>
+                    </div>
+                    <div class="news-tags">
+                        <span class="tag">Python</span>
+                        <span class="tag">Разработка</span>
+                        <span class="tag">TIOBE</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Новость 5 -->
+            <article class="news-card">
+                <img src="https://via.placeholder.com/350x200" alt="Новость" class="news-image">
+                <div class="news-content">
+                    <span class="news-category">Бизнес</span>
+                    <h3 class="news-title">Крупные IT-компании инвестируют в развитие квантовых вычислений</h3>
+                    <p class="news-excerpt">Google, IBM и Microsoft увеличивают инвестиции в разработку квантовых компьютеров, видя в них будущее вычислительных технологий.</p>
+                    <div class="news-meta">
+                        <span>3 дня назад</span>
+                        <span>Алексей Смирнов</span>
+                    </div>
+                    <div class="news-tags">
+                        <span class="tag">Квантовые вычисления</span>
+                        <span class="tag">Бизнес</span>
+                        <span class="tag">Инвестиции</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Новость 6 -->
+            <article class="news-card">
+                <img src="https://via.placeholder.com/350x200" alt="Новость" class="news-image">
+                <div class="news-content">
+                    <span class="news-category">Cloud</span>
+                    <h3 class="news-title">AWS анонсировала новые сервисы для машинного обучения</h3>
+                    <p class="news-excerpt">Amazon Web Services представила новые инструменты для разработчиков AI/ML, упрощающие развертывание и масштабирование моделей.</p>
+                    <div class="news-meta">
+                        <span>4 дня назад</span>
+                        <span>Дмитрий Волков</span>
+                    </div>
+                    <div class="news-tags">
+                        <span class="tag">Cloud</span>
+                        <span class="tag">AWS</span>
+                        <span class="tag">AI/ML</span>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <button class="load-more">Загрузить еще</button>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>© 2023 TechNews. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Простая логика для переключения активного состояния пилсов
+        document.querySelectorAll('.pill').forEach(pill => {
+            pill.addEventListener('click', function() {
+                // Убираем активный класс у всех пилсов в той же группе
+                const container = this.closest('.pills-container');
+                container.querySelectorAll('.pill').forEach(p => {
+                    p.classList.remove('active');
+                });
+                
+                // Добавляем активный класс к нажатому пилсу
+                this.classList.add('active');
+            });
+        });
+
+        // Обработчик поиска
+        document.querySelector('.search-button').addEventListener('click', function() {
+            const searchTerm = document.querySelector('.search-input').value;
+            if (searchTerm.trim() !== '') {
+                alert(`Выполняется поиск по запросу: ${searchTerm}`);
+                // В реальном приложении здесь будет код для фильтрации новостей
+            }
+        });
+
+        // Обработчик кнопки "Загрузить еще"
+        document.querySelector('.load-more').addEventListener('click', function() {
+            alert('Загрузка дополнительных новостей...');
+            // В реальном приложении здесь будет код для подгрузки новостей
+        });
+    </script>
+</body>
+</html>
